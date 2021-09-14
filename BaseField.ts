@@ -1,4 +1,6 @@
 import * as _ from 'lodash';
+import {resolveResultOrPromiseOrCallbackResultOrCallbackPromise} from "../../applications/utils/Comparisons";
+import {asyncTriggerSubscribers} from "./utils/async";
 
 
 export default abstract class BaseField {
@@ -22,8 +24,8 @@ export default abstract class BaseField {
         return undefined;
     }
 
-    triggerSubscribers() {
-        _.forEach(this.subscribers, (callback: () => any) => callback());
+    async triggerSubscribers() {
+        await asyncTriggerSubscribers(this.subscribers);
     }
 }
 

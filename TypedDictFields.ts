@@ -31,7 +31,7 @@ export class TypedDictField<T> extends BaseField {
 
     makeRecordDataWrapperFromData(recordData: T): RecordDataWrapper<T> | null {
         const recordItem: RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(recordData, this.props.itemModel) as RecordOf<T>;
-        return recordItem != null ? new RecordDataWrapper(this.RECORD_SUBSCRIPTIONS_WRAPPER, recordItem) : null;
+        return recordItem != null ? new RecordDataWrapper(this.RECORD_SUBSCRIPTIONS_WRAPPER, recordItem, this.props.itemModel) : null;
     }
 
     subscribeToAttr(attrKeyPath: string, callback: () => any): number {

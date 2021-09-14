@@ -1,6 +1,7 @@
 import * as _ from 'lodash';
 import BaseField from "./BaseField";
 import {separateAttrKeyPath} from "./utils/attrKeyPaths";
+import {asyncTriggerSubscribers} from "./utils/async";
 
 
 export default class RecordSubscriptionsWrapper<T> {
@@ -72,24 +73,32 @@ export default class RecordSubscriptionsWrapper<T> {
         return subscriptionIndex;
     }
 
-    triggerObjectWideSubscribers() {
-        _.forEach(this.objectWideSubscribers, ((callback: () => any) => callback()));
+    async triggerObjectWideSubscribers(): Promise<void> {
+        /* Trigger subscribers object wide and the parent field subscribers */
+        await Promise.all([
+            asyncTriggerSubscribers(this.objectWideSubscribers),
+            this.parent.triggerSubscribers()
+        ]);
     }
 
-    triggerSubscribersForAttr(attrKeyPath: string) {
-        /* Trigger subscribers for specified attribute key path, its parent items and object wide */
+    async triggerSubscribersForAttr(attrKeyPath: string): Promise<void> {
+        /* Trigger subscribers for specified attribute key path, its parent items, object wide and the parent field subscribers */
+        const promises: Promise<any>[] = [];
         const allAttributeKeyPathsCombinations: string[] = this.makeAllAttributeKeyPathsCombinations(attrKeyPath);
         _.forEach(allAttributeKeyPathsCombinations, (attrKeyPathItem: string) => {
             const subscribersForAttr: { [subscriptionIndex: number]: () => any } | undefined = this.attrSubscribers[attrKeyPathItem];
             if (subscribersForAttr !== undefined) {
-                _.forEach(subscribersForAttr, (callback: () => any) => callback());
+                // _.forEach(subscribersForAttr, (callback: () => any) => promises.push(callback()));
+                promises.push(asyncTriggerSubscribers(subscribersForAttr));
             }
         });
-        this.triggerObjectWideSubscribers();
+        promises.push(this.triggerObjectWideSubscribers());
+        await Promise.all(promises);
     }
 
-    triggerSubscribersForMultipleAttrs(attrsKeyPaths: string[]) {
+    async triggerSubscribersForMultipleAttrs(attrsKeyPaths: string[]): Promise<void> {
         /* Trigger subscribers for specified attributes keys paths and object wide */
+        const promises: Promise<any>[] = [];
         const uniqueSubscriptionsCallbacksToCall: { [subscriptionIndex: number]: () => any } = {};
         _.forEach(attrsKeyPaths, (attrKeyPath: string) => {
             const subscribersForAttr: { [subscriptionIndex: number]: () => any } | undefined = this.attrSubscribers[attrKeyPath];
@@ -99,13 +108,15 @@ export default class RecordSubscriptionsWrapper<T> {
                 });
             }
         });
-        _.forEach(uniqueSubscriptionsCallbacksToCall, (callback: () => any) => callback());
-        this.triggerObjectWideSubscribers();
+        // _.forEach(uniqueSubscriptionsCallbacksToCall, (callback: () => any) => callback());
+        promises.push(asyncTriggerSubscribers(uniqueSubscriptionsCallbacksToCall));
+        promises.push(this.triggerObjectWideSubscribers());
+        await Promise.all(promises);
     }
 
-    triggerAllSubscribers() {
+    async triggerAllSubscribers(): Promise<void> {
         /* Trigger subscribers for all attributes and object wide */
-        this.triggerSubscribersForMultipleAttrs(Object.keys(this.attrSubscribers));
+        await this.triggerSubscribersForMultipleAttrs(Object.keys(this.attrSubscribers));
     }
 
     unsubscribe(subscriptionIndex: number): undefined {

@@ -14,6 +14,7 @@ export interface CreateUpdateRecordResponse<T> {
     success: boolean;
     newRecord?: RecordOf<T>;
     previousRecord?: RecordOf<T>;
+    subscribersPromise: Promise<any>;
 }
 
 
@@ -49,7 +50,7 @@ abstract class BaseObjectField<T extends { [attrKeyPath: string]: any }> extends
 
     makeRecordDataWrapperFromItem(recordKey: string, recordItem: RecordOf<T>): RecordDataWrapper<T> {
         const matchingRecordSubscriptions: RecordSubscriptionsWrapper<T> = this.makeGetRecordSubscriptionsWrapper(recordKey);
-        return new RecordDataWrapper(matchingRecordSubscriptions, recordItem);
+        return new RecordDataWrapper(matchingRecordSubscriptions, recordItem, this.props.itemModel);
     }
 
     makeRecordDataWrapperFromData(recordKey: string, recordData: T): RecordDataWrapper<T> | null {
@@ -58,26 +59,19 @@ abstract class BaseObjectField<T extends { [attrKeyPath: string]: any }> extends
     }
 
     protected internalCreateUpdateRecordItem(recordKey: string, recordItem: RecordOf<T>): RecordOf<T> | undefined {
-        const existingRecordSubscriptionsWrapper: RecordSubscriptionsWrapper<T> | undefined = this.RECORDS_SUBSCRIPTIONS_WRAPPERS[recordKey];
         const existingRecordDataWrapper: RecordDataWrapper<T> | undefined = this.CACHED_RECORDS_DATA_WRAPPERS?.[recordKey];
-
         if (this.CACHED_RECORDS_DATA_WRAPPERS === undefined) {
             this.CACHED_RECORDS_DATA_WRAPPERS = {};
         }
         this.CACHED_RECORDS_DATA_WRAPPERS[recordKey] = this.makeRecordDataWrapperFromItem(recordKey, recordItem);
-
-        existingRecordSubscriptionsWrapper?.triggerAllSubscribers();
         return existingRecordDataWrapper?.RECORD_DATA;
     }
 
     protected internalRemoveCachedRecord(recordKey: string): RecordOf<T> | undefined {
-        const existingRecordSubscriptionsWrapper: RecordSubscriptionsWrapper<T> | undefined = this.RECORDS_SUBSCRIPTIONS_WRAPPERS[recordKey];
         const existingRecordDataWrapper: RecordDataWrapper<T> | undefined = this.CACHED_RECORDS_DATA_WRAPPERS?.[recordKey];
-
         if (this.CACHED_RECORDS_DATA_WRAPPERS !== undefined) {
             delete this.CACHED_RECORDS_DATA_WRAPPERS[recordKey];
         }
-        existingRecordSubscriptionsWrapper?.triggerAllSubscribers();
         return existingRecordDataWrapper?.RECORD_DATA;
     }
 
@@ -99,34 +93,47 @@ abstract class BaseObjectField<T extends { [attrKeyPath: string]: any }> extends
         return undefined;
     }
 
-    triggerSubscribersForKey(recordKey: string) {
-        const matchingRecordSubscriptionsWrapper: RecordSubscriptionsWrapper<T> | undefined = this.RECORDS_SUBSCRIPTIONS_WRAPPERS[recordKey];
-        if (matchingRecordSubscriptionsWrapper !== undefined) {
-            matchingRecordSubscriptionsWrapper.triggerObjectWideSubscribers();
-        }
+    async triggerSubscribersForKey(recordKey: string): Promise<void> {
+        const matchingRecordSubscriptionsWrapper: RecordSubscriptionsWrapper<T> = this.makeGetRecordSubscriptionsWrapper(recordKey);
+        // Instead of only triggering the subscribers if the RecordSubscriptionsWrapper exist, we use the makeGetRecordSubscriptionsWrapper
+        // to create a new one if it is missing, because the call to triggerObjectWideSubscribers will also call the triggerListeners of the
+        // parent field (ie, out current ObjectField instance) which we want to call even if the record key did not had a subscriptionsWrapper.
+        await matchingRecordSubscriptionsWrapper.triggerObjectWideSubscribers();
     }
 
-    triggerAllRecordsSubscribers() {
-        _.forEach(this.RECORDS_SUBSCRIPTIONS_WRAPPERS, (recordSubscriptionWrapper: RecordSubscriptionsWrapper<T>) => {
-            recordSubscriptionWrapper.triggerAllSubscribers();
-        })
+    async triggerAllRecordsSubscribers(): Promise<void> {
+        await Promise.all(_.map(this.RECORDS_SUBSCRIPTIONS_WRAPPERS, async (recordSubscriptionWrapper: RecordSubscriptionsWrapper<T>) => {
+            await recordSubscriptionWrapper.triggerAllSubscribers();
+        }));
     }
 
-    updateCachedRecord(key: string, record: RecordOf<T> | null): RecordOf<T> | undefined {
-        const existingRecordItem: RecordOf<T> | undefined = (
+    updateCachedRecord(key: string, record: RecordOf<T> | null): { oldRecord: RecordOf<T> | undefined, subscribersPromise: Promise<any> } {
+        const oldRecord: RecordOf<T> | undefined = (
             record != null ? this.internalCreateUpdateRecordItem(key, record) : this.internalRemoveCachedRecord(key)
         );
-        this.triggerSubscribersForKey(key);
-        this.triggerSubscribers();
-        return existingRecordItem;
+        const subscribersPromise: Promise<any> = this.triggerSubscribersForKey(key);
+        return {oldRecord, subscribersPromise};
     }
 
-    updateCachedRecordAttr(recordKey: string, attrKeyPath: string, value: any): any | undefined {
+    updateCachedRecordAttr(recordKey: string, attrKeyPath: string, value: any): { oldValue: any | undefined, subscribersPromise: Promise<any> } {
         return this.CACHED_RECORDS_DATA_WRAPPERS?.[recordKey]?.updateAttr(attrKeyPath, value);
     }
 
-    updateCachedRecordMultipleAttrs(recordKey: string, mutators: Partial<T>): IterableIterator<[keyof T, T[keyof T]]> | undefined {
-        return this.CACHED_RECORDS_DATA_WRAPPERS?.[recordKey]?.updateMultipleAttrs(mutators);
+    updateCachedRecordMultipleAttrs(recordKey: string, mutators: Partial<T>): {
+        oldValues: IterableIterator<[keyof T, T[keyof T]]> | undefined, subscribersPromise: Promise<any>
+    } {
+        const response = this.CACHED_RECORDS_DATA_WRAPPERS?.[recordKey]?.updateMultipleAttrs(mutators);
+        return response !== undefined ? response : {oldValues: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
+    }
+
+    deleteCachedRecordAttr(recordKey: string, attrKeyPath: string): { subscribersPromise: Promise<any> } {
+        const response = this.CACHED_RECORDS_DATA_WRAPPERS?.[recordKey]?.deleteAttr(attrKeyPath);
+        return response !== undefined ? response : {subscribersPromise: new Promise<void>(resolve => resolve())};
+    }
+
+    removeCachedRecordAttr(recordKey: string, attrKeyPath: string): { oldValue: any | undefined, subscribersPromise: Promise<any> } {
+        const response = this.CACHED_RECORDS_DATA_WRAPPERS?.[recordKey]?.removeAttr(attrKeyPath);
+        return response !== undefined ? response : {oldValue: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
     subscribeToRecordAttr(recordKey: string, attrKeyPath: string, callback: () => any): number {
@@ -143,30 +150,43 @@ abstract class BaseObjectField<T extends { [attrKeyPath: string]: any }> extends
 
     createUpdateCachedRecordFromData(key: string, recordData: { [attrKey: string]: any }): CreateUpdateRecordResponse<T> {
         const recordDataWrapper: RecordDataWrapper<T> | null = this.makeRecordDataWrapperFromData(key, recordData as T);
-        return recordDataWrapper != null ? {success: true, newRecord: recordDataWrapper.RECORD_DATA, previousRecord: this.updateCachedRecord(key, recordDataWrapper.RECORD_DATA)} : {success: false};
+        if (recordDataWrapper != null) {
+            const {oldRecord, subscribersPromise} = this.updateCachedRecord(key, recordDataWrapper.RECORD_DATA);
+            return {success: true, newRecord: recordDataWrapper.RECORD_DATA, previousRecord: oldRecord, subscribersPromise};
+        }
+        return {success: false, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    updateCachedRecords(records: { [key: string]: RecordOf<T> | null }): { [key: string]: RecordOf<T> | undefined } {
+    updateCachedRecords(records: { [key: string]: RecordOf<T> | null }): {
+        oldRecords: { [key: string]: RecordOf<T> | undefined }, subscribersPromise: Promise<any>
+    } {
         if (Object.keys(records).length > 0) {
             const existingRecords: { [key: string]: RecordOf<T> | undefined } = _.transform(
                 records,
                 (result: { [key: string]: RecordOf<T> | undefined }, recordItem: RecordOf<T> | null, key: string) => {
-                    result[key] = recordItem != null ? this.internalCreateUpdateRecordItem(key, recordItem) : this.internalRemoveCachedRecord(key);
+                    result[key] = (recordItem != null ?
+                        this.internalCreateUpdateRecordItem(key, recordItem) :
+                        this.internalRemoveCachedRecord(key)
+                    );
                     // The internalCreateUpdateRecordItem does not call the triggerSubscribers
                     // function, which allows us to call it only after we updated all the records.
                 },
                 {}
             );
+            const promises: Promise<any>[] = [];
             for (let recordKey in existingRecords) {
-                this.triggerSubscribersForKey(recordKey);
+                promises.push(this.triggerSubscribersForKey(recordKey));
             }
-            this.triggerSubscribers();
-            return existingRecords;
+            promises.push(this.triggerSubscribers());
+            const subscribersPromise: Promise<any> = Promise.all(promises);
+            return {oldRecords: existingRecords, subscribersPromise};
         }
-        return {};
+        return {oldRecords: {}, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    createUpdateCachedRecordsFromData(recordsData: { [recordKey: string]: { [attrKey: string]: any } }): { [recordKey: string]: CreateUpdateRecordResponse<T> } {
+    createUpdateCachedRecordsFromData(recordsData: { [recordKey: string]: { [attrKey: string]: any } }): {
+        responses: { [recordKey: string]: CreateUpdateRecordResponse<T> }, subscribersPromise: Promise<any>
+    } {
         const recordsToUpdates: { [recordKey: string]: RecordOf<T> } = {};
         const responses: { [recordKey: string]: CreateUpdateRecordResponse<T> } = _.transform(
             recordsData, (result: { [key: string]: any }, recordDataItem: { [attrKey: string]: any }, recordKey: string) => {
@@ -179,20 +199,25 @@ abstract class BaseObjectField<T extends { [attrKeyPath: string]: any }> extends
                 }
             }
         );
-        _.forEach(this.updateCachedRecords(recordsToUpdates), (previousRecordItem: RecordOf<T> | undefined, recordKey: string) => {
+        const {oldRecords, subscribersPromise} = this.updateCachedRecords(recordsToUpdates);
+        _.forEach(oldRecords, (previousRecordItem: RecordOf<T> | undefined, recordKey: string) => {
             responses[recordKey].previousRecord = previousRecordItem;
         });
-        return responses;
+        return {responses, subscribersPromise};
     }
 
-    removeCachedRecord(key: string): RecordOf<T> | undefined {
+    removeCachedRecord(key: string): { oldRecord: RecordOf<T> | undefined, subscribersPromise: Promise<any> } {
         const existingRecordItem: RecordOf<T> | undefined = this.internalRemoveCachedRecord(key);
-        this.triggerSubscribersForKey(key);
-        this.triggerSubscribers();
-        return existingRecordItem;
+        const subscribersPromise: Promise<any> = Promise.all([
+            this.triggerSubscribersForKey(key),
+            this.triggerSubscribers()
+        ]);
+        return {oldRecord: existingRecordItem, subscribersPromise};
     }
 
-    removeCachedRecords(keys: string[]): { [key: string]: RecordOf<T> | undefined } {
+    removeCachedRecords(keys: string[]): {
+        oldRecords: { [key: string]: RecordOf<T> | undefined }, subscribersPromise: Promise<any>
+    } {
         const existingRecords: { [key: string]: RecordOf<T> } = _.transform(
             keys,
             (result: { [key: string]: RecordOf<T> | undefined }, key: string) => {
@@ -203,15 +228,18 @@ abstract class BaseObjectField<T extends { [attrKeyPath: string]: any }> extends
             {} // Specifying an object has the accumulator is crucial here, because since keys is an array, if we do not
                // specify the accumulator, lodash will by default create an array accumulator, which is not what we want.
         );
+        const promises: Promise<any>[] = [];
         _.forEach(existingRecords, ((__: any, recordKey: string) => {
-            this.triggerSubscribersForKey(recordKey);
+            promises.push(this.triggerSubscribersForKey(recordKey));
         }));
-        this.triggerSubscribers();
-        return existingRecords;
+        promises.push(this.triggerSubscribers());
+        const subscribersPromise: Promise<any> = Promise.all(promises);
+        return {oldRecords: existingRecords, subscribersPromise};
     }
 
-
-    loadRecordsFromData(recordsData: { [recordId: string]: T }) {
+    loadRecordsFromData(recordsData: { [recordId: string]: T }): {
+        records: { [key: string]: RecordOf<T> | undefined }, subscribersPromise: Promise<any>
+    } {
         const recordsDataWrappers: { [key: string]: RecordDataWrapper<T> } = _.transform(
             recordsData,
             (result: { [key: string]: RecordDataWrapper<T> }, itemData: T, key: string) => {
@@ -220,11 +248,14 @@ abstract class BaseObjectField<T extends { [attrKeyPath: string]: any }> extends
             {}
         );
         this.CACHED_RECORDS_DATA_WRAPPERS = recordsDataWrappers;
-        this.triggerSubscribers();
-        return _.mapValues(recordsDataWrappers, (recordDataWrapperItem: RecordDataWrapper<T>) => recordDataWrapperItem.RECORD_DATA);
+        const subscribersPromise: Promise<any> = this.triggerSubscribers();
+        const records = _.mapValues(recordsDataWrappers, (recordDataWrapperItem: RecordDataWrapper<T>) => recordDataWrapperItem.RECORD_DATA);
+        return {records, subscribersPromise};
     }
 
-    loadRecordsFromJsonifiedData(jsonifiedRecordsData: any): { [recordId: string]: RecordOf<T> } | null {
+    loadRecordsFromJsonifiedData(jsonifiedRecordsData: any): {
+        records: { [key: string]: RecordOf<T> | undefined }, subscribersPromise: Promise<any>
+    } | null {
         try {
             const parsedRecordsData: any = JSON.parse(jsonifiedRecordsData);
             if (_.isPlainObject(parsedRecordsData)) {
@@ -282,8 +313,8 @@ export class ObjectField<T> extends BaseObjectField<T> {
 
     async getRecords(): Promise<{ [key: string]: RecordOf<T> } | null> {
         return this.CACHED_RECORDS_DATA_WRAPPERS !== undefined ? _.mapValues(this.CACHED_RECORDS_DATA_WRAPPERS, (
-            (recordDataWrapperItem: RecordDataWrapper<T>) => recordDataWrapperItem.RECORD_DATA)
-        ): this.retrieveAndCacheRecords();
+            (recordDataWrapperItem: RecordDataWrapper<T>) => recordDataWrapperItem.RECORD_DATA
+        )): this.retrieveAndCacheRecords();
     }
 
     async getSingleRecord(key: string): Promise<RecordOf<T> | undefined> {
