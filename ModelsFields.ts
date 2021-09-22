@@ -1,37 +1,42 @@
 import * as _ from 'lodash';
 import * as immutable from "immutable";
-import {ACTIVE_SELF_DICT} from "./Serializers/smartSettersRemoversForRecursiveDifferences_new";
+import {resolveResultOrCallbackResult} from "./utils/executors";
 
 
-export interface BaseFieldModelProps {
+export interface PrimitiveRestrainedFieldModelProps {
     required?: boolean;
-    customDefaultValue?: any;
+}
+
+export interface ComplexBaseFieldModelProps extends PrimitiveRestrainedFieldModelProps {
+    useEmptyAsDefault?: boolean;
+}
+
+export interface BaseFieldModelProps extends PrimitiveRestrainedFieldModelProps {
+    customDefaultValue?: any | (() => any);
 }
 
 export class BaseFieldModel {
     constructor(public readonly props: BaseFieldModelProps) {
     }
 
-    makeDefault() {
+    /*makeDefault() {
         return undefined;
-    }
+    }*/
 }
 
-export interface TypedDictProps extends BaseFieldModelProps {
+
+export interface TypedDictProps extends ComplexBaseFieldModelProps {
     keyType: string;
     keyName: string;
     itemType: MapModel | "__ACTIVE_SELF_DICT__";
 }
 
 export class TypedDictFieldModel extends BaseFieldModel {
-    constructor(public readonly props: TypedDictProps) {
-        super(props);
-    }
-
-    makeDefault() {
-        return this.props.required ? immutable.Map() : undefined;
+    constructor(props: TypedDictProps) {
+        super({...props, customDefaultValue: props.useEmptyAsDefault === true ? () => immutable.Map() : undefined});
     }
 }
+
 
 export interface MapModelProps extends BaseFieldModelProps {
     fields: { [fieldName: string]: BaseFieldModel | TypedDictFieldModel | MapModel };
@@ -42,8 +47,16 @@ export class MapModel {
     }
 
     makeDefault() {
+        // todo: remove this function ?
         return _.transform(this.props.fields, (result: { [key: string]: any }, fieldItem, fieldKey: string) => {
-            result[fieldKey] = fieldItem.makeDefault();
+            result[fieldKey] = resolveResultOrCallbackResult(fieldItem.props.customDefaultValue);
         }, {});
+    }
+}
+
+
+export class SetFieldModel extends BaseFieldModel {
+    constructor(public readonly props: ComplexBaseFieldModelProps) {
+        super({...props, customDefaultValue: props.useEmptyAsDefault === true ? () => immutable.Set([]) : undefined});
     }
 }

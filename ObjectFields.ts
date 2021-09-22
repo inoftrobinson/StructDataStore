@@ -318,7 +318,7 @@ export class ObjectField<T> extends BaseObjectField<T> {
     }
 
     async getSingleRecord(key: string): Promise<RecordOf<T> | undefined> {
-        const records: { [key: string]: RecordOf<T> } = await this.getRecords();
+        const records: { [key: string]: RecordOf<T> } | null = await this.getRecords();
         return records != null ? records[key] : undefined;
     }
 }
@@ -359,6 +359,11 @@ export class ChildObjectField<T> extends BaseObjectField<T> {
         return this.CACHED_RECORDS_DATA_WRAPPERS !== undefined ? _.mapValues(this.CACHED_RECORDS_DATA_WRAPPERS, (
             (recordDataWrapperItem: RecordDataWrapper<T>) => recordDataWrapperItem.RECORD_DATA)
         ) : this.retrieveAndCacheRecords();
+    }
+
+    async getSingleRecord(key: string): Promise<RecordOf<T> | undefined> {
+        const records: { [key: string]: RecordOf<T> } | null = await this.getRecords();
+        return records != null ? records[key] : undefined;
     }
 }
 

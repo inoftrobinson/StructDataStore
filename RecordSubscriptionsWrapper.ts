@@ -2,6 +2,7 @@ import * as _ from 'lodash';
 import BaseField from "./BaseField";
 import {separateAttrKeyPath} from "./utils/attrKeyPaths";
 import {asyncTriggerSubscribers} from "./utils/async";
+import {resolveResultOrPromiseOrCallbackResultOrCallbackPromise} from "../../applications/utils/Comparisons";
 
 
 export default class RecordSubscriptionsWrapper<T> {
@@ -109,8 +110,17 @@ export default class RecordSubscriptionsWrapper<T> {
             }
         });
         // _.forEach(uniqueSubscriptionsCallbacksToCall, (callback: () => any) => callback());
-        promises.push(asyncTriggerSubscribers(uniqueSubscriptionsCallbacksToCall));
-        promises.push(this.triggerObjectWideSubscribers());
+        // promises.push(asyncTriggerSubscribers(uniqueSubscriptionsCallbacksToCall));
+        promises.push(..._.map(uniqueSubscriptionsCallbacksToCall, (callback: () => any) => (
+            resolveResultOrPromiseOrCallbackResultOrCallbackPromise(callback())
+        )));
+        promises.push(..._.map(this.objectWideSubscribers, (callback: () => any) => (
+            resolveResultOrPromiseOrCallbackResultOrCallbackPromise(callback())
+        )));
+        promises.push(..._.map(this.parent.subscribers, (callback: () => any) => (
+            resolveResultOrPromiseOrCallbackResultOrCallbackPromise(callback())
+        )));
+        // promises.push(this.triggerObjectWideSubscribers());
         await Promise.all(promises);
     }
 

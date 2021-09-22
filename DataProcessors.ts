@@ -1,7 +1,8 @@
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
-import {BaseFieldModel, MapModel, TypedDictFieldModel} from "./ModelsFields";
+import {BaseFieldModel, MapModel, SetFieldModel, TypedDictFieldModel} from "./ModelsFields";
 import {ACTIVE_SELF_DICT} from "./Serializers/smartSettersRemoversForRecursiveDifferences_new";
+import {resolveResultOrCallbackResult} from "./utils/executors";
 
 
 export function loadObjectDataToImmutableValuesWithFieldsModel<T>(objectData: { [attrKey: string]: any }, objectModel: MapModel): immutable.RecordOf<any> | null {
@@ -12,7 +13,9 @@ export function loadObjectDataToImmutableValuesWithFieldsModel<T>(objectData: { 
         const matchingItemData: any | undefined = objectData[fieldKey];
         if (matchingItemData == null) {
             if (fieldItem.props.required !== true) {
-                result[fieldKey] = fieldItem.props.customDefaultValue !== undefined ? fieldItem.props.customDefaultValue : undefined;
+                result[fieldKey] = (fieldItem.props.customDefaultValue !== undefined ?
+                        resolveResultOrCallbackResult(fieldItem.props.customDefaultValue) : undefined
+                );
             } else {
                 console.log(`Missing ${fieldKey}. Breaks all`);
             }
@@ -26,6 +29,9 @@ export function loadObjectDataToImmutableValuesWithFieldsModel<T>(objectData: { 
                 }, {}));
             } else if (fieldItem instanceof MapModel) {
                 result[fieldKey] = loadObjectDataToImmutableValuesWithFieldsModel(matchingItemData, fieldItem);
+            } else if (fieldItem instanceof SetFieldModel) {
+                const itemDataIsArrayLike: boolean = _.isArrayLike(matchingItemData);
+                result[fieldKey] = immutable.Set(itemDataIsArrayLike ? matchingItemData : []);
             } else {
                 result[fieldKey] = immutable.fromJS(matchingItemData);
             }
