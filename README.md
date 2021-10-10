@@ -1,2 +1,3 @@
 # StructDataStore
- Structured DataStore with data immutability, automatic data validation, managed data retrieval and granular listeners
+Modern structured DataStore with type inferring, automatic data validation, data immutability, managed data retrieval
+and granular listeners for TypeScript.

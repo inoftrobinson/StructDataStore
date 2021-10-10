@@ -183,6 +183,7 @@ export default class RecordDataWrapper<T> {
 
         const serialized1 = this.RECORD_DATA.toJS();
         const rar = this.RECORD_DATA.deleteIn(['field1']);
+        // const rar = this.RECORD_DATA.setIn(['field1'], 'lol');
         const serialized2 = rar.toJS();
         // todo: fix bug where deleteIn and delete are not working and are not deleting the fields
 
