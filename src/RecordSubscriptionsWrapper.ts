@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import BaseField from "./BaseField";
+import BaseStore from "./Stores/BaseStore";
 import {separateAttrKeyPath} from "./utils/attrKeyPaths";
 import {asyncTriggerSubscribers} from "./utils/async";
 import {resolveResultOrPromiseOrCallbackResultOrCallbackPromise} from "../../applications/utils/Comparisons";
@@ -10,7 +10,7 @@ export default class RecordSubscriptionsWrapper<T> {
     private readonly attrSubscribers: { [attrKey: string]: { [index: number] : () => any } };
     private readonly subscriptionsIndexesToSubscribedKeyPaths: { [subscriberIndex: number]: string[] };
 
-    constructor(public readonly parent: BaseField) {
+    constructor(public readonly parent: BaseStore) {
         this.objectWideSubscribers = {};
         this.attrSubscribers = {};
         this.subscriptionsIndexesToSubscribedKeyPaths = {};

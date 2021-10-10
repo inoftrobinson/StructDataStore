@@ -1,9 +1,9 @@
 import * as _ from 'lodash';
-import {resolveResultOrPromiseOrCallbackResultOrCallbackPromise} from "../../applications/utils/Comparisons";
-import {asyncTriggerSubscribers} from "./utils/async";
+import {asyncTriggerSubscribers} from "../utils/async";
+import SubscriptionsManager from "../SubscriptionsManager";
 
 
-export default abstract class BaseField {
+export default abstract class BaseStore {
     public activeSubscribersIndex: number;
     private readonly subscribers: { [index: number]: () => any };
 

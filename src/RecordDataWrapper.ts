@@ -1,40 +1,40 @@
+import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "./DataProcessors";
-import {BaseFieldModel, MapModel, TypedDictFieldModel} from "./ModelsFields";
-import RecordSubscriptionsWrapper from "./RecordSubscriptionsWrapper";
+import {MapModel} from "./ModelsFields";
+import BaseObjectStoreV2 from "./Stores/ObjectStores/BaseObjectStoreV2";
 
 
 export default class RecordDataWrapper<T> {
     constructor(
-        public subscriptionsWrapper: RecordSubscriptionsWrapper<T>,
+        public readonly parentStore: BaseObjectStoreV2<T>,
         public RECORD_DATA: immutable.RecordOf<T>,
         public readonly itemModel: MapModel
     ) {
     }
 
-    static fromRecord<T>(subscriptionsWrapper: RecordSubscriptionsWrapper<T>, itemModel: MapModel, record:immutable.RecordOf<T>) {
-        return new RecordDataWrapper<T>(subscriptionsWrapper, record, itemModel);
+    static fromRecord<T>(parentStore: BaseObjectStoreV2<T>, itemModel: MapModel, record:immutable.RecordOf<T>) {
+        return new RecordDataWrapper<T>(parentStore, record, itemModel);
     }
 
-    static fromData<T>(subscriptionsWrapper: RecordSubscriptionsWrapper<T>, itemModel: MapModel, data: T) {
+    static fromData<T>(parentStore: BaseObjectStoreV2<T>, itemModel: MapModel, data: T) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel(data, itemModel) as immutable.RecordOf<T>;
-        return new RecordDataWrapper<T>(subscriptionsWrapper, record, itemModel);
+        return new RecordDataWrapper<T>(parentStore, record, itemModel);
     }
 
-    static fromEmpty<T>(subscriptionsWrapper: RecordSubscriptionsWrapper<T>, itemModel: MapModel) {
+    static fromEmpty<T>(parentStore: BaseObjectStoreV2<T>, itemModel: MapModel) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel({}, itemModel) as immutable.RecordOf<T>;
-        return new RecordDataWrapper<T>(subscriptionsWrapper, record, itemModel);
+        return new RecordDataWrapper<T>(parentStore, record, itemModel);
     }
 
-    /*static fromNull<T>(subscriptionsWrapper: RecordSubscriptionsWrapper<T>) {
-        return new RecordDataWrapper<T>(subscriptionsWrapper);
+    /*static fromNull<T>(parentStore: BaseObjectStoreV2<T>) {
+        return new RecordDataWrapper<T>(parentStore);
     }*/
-
 
     updateRecord(record:immutable.RecordOf<T> | null): { subscribersPromise: Promise<any> } {
         this.RECORD_DATA = record;
-        const subscribersPromise: Promise<any> = this.subscriptionsWrapper.triggerAllSubscribers();
+        const subscribersPromise: Promise<any> = this.parentStore.subscriptionsManager.triggerAllSubscribers();
         return {subscribersPromise};
     }
 
@@ -116,13 +116,36 @@ export default class RecordDataWrapper<T> {
 
     /*const [alterSuccess, alteredRecordData, oldAttributeValue] = this.safeAlterRecordDataInPath(attrKeyPathElements, immutableValue);*/
 
-    updateAttr(attrKeyPath: string, value: any): { oldValue: any | undefined, subscribersPromise: Promise<any> } {
+    /*
+    declare function get<Obj extends object, P extends string>(
+    object: Obj, path: F.AutoPath<Obj, P>
+): O.Path<Obj, S.Split<P, '.'>>
+     */
+    get<P extends string>(path: F.AutoPath<T, P>): O.Path<T, S.Split<P, '.'>> {
+        return 0 as any;
+    }
+
+    getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): O.Path<T, S.Split<P, '.'>> {
+        const attrKeyPathElements: string[] = attrKeyPath.split('.');
+        return this.RECORD_DATA.getIn(attrKeyPathElements);
+    }
+
+    getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): U.Merge<O.P.Pick<T, S.Split<P, ".">>> {
+        const retrievedValues: U.Merge<O.P.Pick<T, S.Split<P, ".">>> = _.transform(attrsKeyPaths, (output: {}, attrKeyPath: F.AutoPath<T, P>) => {
+            const attrKeyPathElements: string[] = attrKeyPath.split('.');
+            output[attrKeyPath] = this.RECORD_DATA.getIn(attrKeyPathElements);
+        }, {});
+        return retrievedValues;
+    }
+
+    updateAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>, value: any): {
+        oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any>
+    } {
         const immutableValue: any = immutable.fromJS(value);
         const attrKeyPathElements: string[] = attrKeyPath.split('.');
-        // const serialized = this.RECORD_DATA.toJS();
         const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
         this.RECORD_DATA = this.RECORD_DATA.setIn(attrKeyPathElements, immutableValue);
-        const subscribersPromise = this.subscriptionsWrapper.triggerSubscribersForAttr(attrKeyPath);
+        const subscribersPromise = this.parentStore.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
         return { oldValue, subscribersPromise };
     }
 
@@ -142,22 +165,63 @@ export default class RecordDataWrapper<T> {
             return oldValue;
         });
         this.RECORD_DATA = alteredRecordData;
-        const subscribersPromise: Promise<any> = this.subscriptionsWrapper.triggerSubscribersForMultipleAttrs(mutatorsKeys);
+        const subscribersPromise: Promise<any> = this.parentStore.subscriptionsManager.triggerSubscribersForMultipleAttrs(mutatorsKeys);
         return {oldValues, subscribersPromise};
     }
 
-    deleteAttr(attrKeyPath: string): { subscribersPromise: Promise<any> } {
+    deleteAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): { subscribersPromise: Promise<any> } {
         const attrKeyPathElements: string[] = attrKeyPath.split('.');
         this.RECORD_DATA = this.RECORD_DATA.deleteIn(attrKeyPathElements);
-        const subscribersPromise: Promise<any> = this.subscriptionsWrapper.triggerSubscribersForAttr(attrKeyPath);
+        const subscribersPromise: Promise<any> = this.parentStore.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
         return {subscribersPromise};
     }
 
-    removeAttr(attrKeyPath: string): { oldValue: any | undefined, subscribersPromise: Promise<any> } {
+    deleteMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): { subscribersPromise: Promise<any> } {
+        if (!(attrsKeyPaths.length > 0)) {
+            return {oldValues: {}, subscribersPromise: new Promise(resolve => resolve())};
+        }
+
+        const serialized1 = this.RECORD_DATA.toJS();
+        const rar = this.RECORD_DATA.deleteIn(['field1']);
+        const serialized2 = rar.toJS();
+        // todo: fix bug where deleteIn and delete are not working and are not deleting the fields
+
+        let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
+        _.forEach(attrsKeyPaths, (attrKeyPath: F.AutoPath<T, P>) => {
+            const attrKeyPathElements: string[] = attrKeyPath.split('.');
+            alteredRecordData = alteredRecordData.deleteIn(attrKeyPathElements);
+        });
+        const serialized3 = alteredRecordData.toJS();
+        this.RECORD_DATA = alteredRecordData;
+        const subscribersPromise: Promise<any> = this.parentStore.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+        return {subscribersPromise};
+    }
+
+    removeAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): {
+        oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any>
+    } {
         const attrKeyPathElements: string[] = attrKeyPath.split('.');
         const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
         this.RECORD_DATA = this.RECORD_DATA.deleteIn(attrKeyPathElements);
-        const subscribersPromise: Promise<any> = this.subscriptionsWrapper.triggerSubscribersForAttr(attrKeyPath);
+        const subscribersPromise: Promise<any> = this.parentStore.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
         return {oldValue, subscribersPromise};
+    }
+
+    removeMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): {
+        oldValues: U.Merge<O.P.Pick<T, S.Split<P, ".">>> | undefined, subscribersPromise: Promise<any>
+    } {
+        if (!(attrsKeyPaths.length > 0)) {
+            return {oldValues: {}, subscribersPromise: new Promise(resolve => resolve())};
+        }
+        let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
+        const oldValues: { [attrKeyPath: string]: any | undefined } = _.transform(attrsKeyPaths, (result: {}, attrKeyPath: string) => {
+            const attrKeyPathElements: string[] = attrKeyPath.split('.');
+            const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
+            alteredRecordData = alteredRecordData.deleteIn(attrKeyPathElements, immutableValue);
+            return oldValue;
+        });
+        this.RECORD_DATA = alteredRecordData;
+        const subscribersPromise: Promise<any> = this.parentStore.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+        return {oldValues, subscribersPromise};
     }
 }

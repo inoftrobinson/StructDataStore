@@ -1,0 +1,54 @@
+{
+  "rootDir": "./",
+  "roots": [
+    "<rootDir>/tests/",
+    "<rootDir>/static/@inoft/StructDataStore/tests/"
+  ],
+  "collectCoverageFrom": [
+    "src/components/**/*.js",
+    "!src/components/index.js",
+    "!src/components/**/*/index.js",
+    "src/services/**/*.js",
+    "!src/services/index.js",
+    "!src/services/**/*/index.js"
+  ],
+  "transform": {
+    "^.+\\.(js|jsx)$": "<rootDir>/node_modules/babel-jest",
+    "^.+\\.(ts|tsx)$": "<rootDir>/node_modules/ts-jest",
+    ".+\\.(css|styl|less|sass|scss)$": "jest-css-modules-transform"
+  },
+  "transformIgnorePatterns": [
+    "^.+\\.module\\.(css|sass|scss)$"
+  ],
+  "moduleNameMapper": {
+    "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/scripts/jest/mocks/file_mock.js",
+    "^.+\\.module\\.(css|sass|scss)$": "identity-obj-proxy"
+  },
+  "setupFiles": [
+    "<rootDir>/scripts/jest/setup/enzyme.js",
+    "<rootDir>/scripts/jest/setup/throw_on_console_error.js"
+  ],
+  "setupFilesAfterEnv": [
+    "<rootDir>/scripts/jest/setup/mocks.js",
+    "<rootDir>/scripts/jest/setup/polyfills.js",
+    "<rootDir>/scripts/jest/setup/unmount_enzyme.js"
+  ],
+  "coverageDirectory": "<rootDir>/reports/jest-coverage",
+  "coverageReporters": [
+    "html"
+  ],
+  "moduleFileExtensions": ["web.js", "js", "web.ts", "ts", "web.tsx", "tsx", "json", "web.jsx", "jsx", "node", "css", "scss"],
+  "testMatch": [
+    "<rootDir>/tests/(*.test.js|test.js)",
+    "**/**/**/**/(*.test.ts|test.ts)",
+    "<rootDir>/tests/(*.test.tsx|test.tsx)"
+  ],
+  "snapshotSerializers": [
+    "<rootDir>/node_modules/enzyme-to-json/serializer"
+  ],
+  "globals": {
+    "ts-jest": {
+      "diagnostics": false
+    }
+  }
+}

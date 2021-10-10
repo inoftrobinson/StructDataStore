@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
-import {ChildObjectField} from "./ObjectFields";
+import {ChildObjectStore} from "./ObjectStores/ObjectStores";
 
 
 export interface ContainerFieldProps<T extends { [ childKey: string]: any }> {
@@ -9,7 +9,7 @@ export interface ContainerFieldProps<T extends { [ childKey: string]: any }> {
     onRetrievalFailure: (responseData: any) => any;
 }
 
-export default class ContainerField<T extends {}> {
+export default class ContainerStore<T extends {}> {
     private pendingRetrievalPromise?: Promise<{ [key: string]: immutable.RecordOf<T> } | null>;
     private activeSubscribersIndex: number;
     private readonly subscribers: { [index: number]: { [childKey: string]: number } };
@@ -17,7 +17,7 @@ export default class ContainerField<T extends {}> {
     constructor(public readonly props: ContainerFieldProps<T>) {
         this.activeSubscribersIndex = 0;
         this.subscribers = {};
-        _.forEach(this.props.children as {}, (child: ChildObjectField<any>) => child.registerParentField(this));
+        _.forEach(this.props.children as {}, (child: ChildObjectStore<any>) => child.registerParentField(this));
     }
 
     get children() {
@@ -27,8 +27,8 @@ export default class ContainerField<T extends {}> {
     subscribe(callback: () => any): number {
         const index: number = this.activeSubscribersIndex;
         this.subscribers[index] = _.mapValues(
-            this.props.children as { [childKey: string]: ChildObjectField<any> },
-            (child: ChildObjectField<any>) => child.subscribe(callback)
+            this.props.children as { [childKey: string]: ChildObjectStore<any> },
+            (child: ChildObjectStore<any>) => child.subscribe(callback)
         );
         this.activeSubscribersIndex += 1;
         return index;
@@ -37,7 +37,7 @@ export default class ContainerField<T extends {}> {
     unsubscribe(index: number): undefined {
         const childrenSubscriptions: { [childKey: string]: number } = this.subscribers[index];
         _.forEach(childrenSubscriptions, (childSubscriptionIndex: number, childKey: string) => {
-            (this.children[childKey] as ChildObjectField<any>).unsubscribe(childSubscriptionIndex);
+            (this.children[childKey] as ChildObjectStore<any>).unsubscribe(childSubscriptionIndex);
         });
         delete this.subscribers[index];
         return undefined;
@@ -47,7 +47,7 @@ export default class ContainerField<T extends {}> {
         try {
             const parsedRecordsData: any = JSON.parse(jsonifiedRecordsData);
             if (_.isPlainObject(parsedRecordsData)) {
-                _.forEach(this.children as {}, (childField: ChildObjectField<any>, childKey: string) => {
+                _.forEach(this.children as {}, (childField: ChildObjectStore<any>, childKey: string) => {
                     const matchingDataItem: any | undefined = parsedRecordsData[childKey];
                     childField.loadDataToRecords(matchingDataItem);
                 });
@@ -66,7 +66,7 @@ export default class ContainerField<T extends {}> {
             const retrievalPromise: Promise<{ [key: string]: immutable.RecordOf<T> | null }> = this.props.retrieveDataCallable().then(responseData => {
                 this.pendingRetrievalPromise = undefined;
                 if (responseData.success === true && responseData.data != null) {
-                    _.forEach(this.children as {}, (childField: ChildObjectField<any>, childKey: string) => {
+                    _.forEach(this.children as {}, (childField: ChildObjectStore<any>, childKey: string) => {
                         const matchingDataItem: any | undefined = responseData.data[childKey];
                         childField.loadDataToRecords(matchingDataItem);
                     });

@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import BaseField from "./BaseField";
+import BaseStore from "./BaseStore";
 
 
 interface BaseFieldProps {
@@ -7,7 +7,7 @@ interface BaseFieldProps {
     onRetrievalFailure?: (responseData: any) => any;
 }
 
-export class ValueField<T> extends BaseField {
+export class ValueStore<T> extends BaseStore {
     public CACHED_VALUE?: T;
     private pendingRetrievalPromise?: Promise<T | null>;
 
@@ -35,16 +35,22 @@ export class ValueField<T> extends BaseField {
         }
     }
 
-    getValue(): Promise<T | null> {
-        return this.CACHED_VALUE !== undefined ?
-            new Promise(resolve => resolve(this.CACHED_VALUE)) :
-            this.retrieveAndCacheValue();
+    async getValue(): Promise<T | null> {
+        return this.CACHED_VALUE !== undefined ? this.CACHED_VALUE : this.retrieveAndCacheValue();
     }
 
     updateCachedValue(value: T): T | undefined {
+        return this.updateCachedValueWithReturnedSubscribersPromise(value).oldValue;
+    }
+
+    updateCachedValueWithReturnedSubscribersPromise(value: T): { oldValue: T | undefined, subscribersPromise: Promise<any> } {
         const existingValue: T | undefined = this.CACHED_VALUE;
         this.CACHED_VALUE = value;
-        this.triggerSubscribers();
-        return existingValue;
+        const subscribersPromise = this.triggerSubscribers();
+        return {oldValue: existingValue, subscribersPromise};
+    }
+
+    clearValue(): void {
+        this.CACHED_VALUE = undefined;
     }
 }

@@ -1,11 +1,11 @@
 import * as _ from 'lodash';
 import {RecordOf} from 'immutable';
-import BaseField from "./BaseField";
-import {loadObjectDataToImmutableValuesWithFieldsModel} from "./DataProcessors";
-import {MapModel} from "./ModelsFields";
-import {CreateUpdateRecordResponse} from "./ObjectFields";
-import RecordSubscriptionsWrapper from "./RecordSubscriptionsWrapper";
-import RecordDataWrapper from "./RecordDataWrapper";
+import BaseStore from "./BaseStore";
+import {loadObjectDataToImmutableValuesWithFieldsModel} from "../DataProcessors";
+import {MapModel} from "../ModelsFields";
+import {CreateUpdateRecordResponse} from "./ObjectStores/ObjectStores";
+import RecordSubscriptionsWrapper from "../RecordSubscriptionsWrapper";
+import RecordDataWrapper from "../RecordDataWrapper";
 
 
 interface BaseFieldProps {
@@ -14,7 +14,7 @@ interface BaseFieldProps {
     onRetrievalFailure?: (responseData: any) => any;
 }
 
-export class TypedDictField<T> extends BaseField {
+export class TypedDictStore<T> extends BaseStore {
     private readonly RECORD_SUBSCRIPTIONS_WRAPPER: RecordSubscriptionsWrapper<T>;
     private CACHED_RECORD_DATA_WRAPPER?: RecordDataWrapper<T>;
     private pendingRetrievalPromise?: Promise<RecordOf<T> | null>;

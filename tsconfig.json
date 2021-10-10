@@ -1,0 +1,42 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+      // highly recommended (required by few utilities)
+    "strictNullChecks": true,
+
+    // this is the lowest supported standard library
+    "lib": ["es2015"],
+    "declaration": false,
+    "jsx": "react",
+    "allowJs": true,
+    "module": "esnext",
+    "target": "es6",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "types": [
+      "underscore",
+      "jest",
+      "mocha",
+      "./static/@inoft/eui.d.ts"
+    ],
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "noImplicitAny": false,
+    "suppressImplicitAnyIndexErrors": true,
+  },
+  "include": [
+    "./types/custom.d.ts",
+    "./static/@inoft/eui.d.ts",
+  ],
+  "typeRoots": [
+    "./types",
+    "node_modules/@types"
+  ],
+}
