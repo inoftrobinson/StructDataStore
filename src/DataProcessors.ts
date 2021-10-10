@@ -9,7 +9,7 @@ export function loadObjectDataToImmutableValuesWithFieldsModel<T>(objectData: { 
     // todo: return null on breaks all
     // We iterate over the objectModel fields instead of iterating over the data, because the record we want to be built will need to contains all
     // values in our model. We will populate the field's with their matching data, but the data that has not been matched to a field will be discarded.
-    return immutable.Record(_.transform(objectModel.props.fields, (result: {}, fieldItem: BaseFieldModel | MapModel | TypedDictFieldModel, fieldKey: string) => {
+    const recordValues = _.transform(objectModel.props.fields, (result: {}, fieldItem: BaseFieldModel | MapModel | TypedDictFieldModel, fieldKey: string) => {
         const matchingItemData: any | undefined = objectData[fieldKey];
         if (matchingItemData == null) {
             if (fieldItem.props.required !== true) {
@@ -36,7 +36,14 @@ export function loadObjectDataToImmutableValuesWithFieldsModel<T>(objectData: { 
                 result[fieldKey] = immutable.fromJS(matchingItemData);
             }
         }
-    }))();
+    });
+    const recordDefaultValues = _.mapValues(recordValues, () => undefined);
+    // We set the defaultValues to a map of undefined values for all the keys in our recordValues. This is crucial, as this allows
+    //the deletion and removal of fields. Otherwise, the default values would be restored when the fields are deleted/removed.
+    const recordFactory = immutable.Record(recordDefaultValues);
+    // The default values are used to created a record factory.
+    return recordFactory(recordValues);
+    // The record is created by passing the values to populate to the record factory.
 }
 
 export function mergeItemWithDefaultsModel<T extends { [attrKey: string]: any }>(

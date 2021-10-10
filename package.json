@@ -4,7 +4,7 @@
   "description": "Modern structured DataStore with type inferring, automatic data validation, data immutability, managed data retrieval\nand granular listeners for TypeScript.",
   "main": "text.js",
   "dependencies": {
-    "immutable": "^4.0.0-rc.14",
+    "immutable": "^4.0.0",
     "lodash": "^4.17.21",
     "regenerator-runtime": "^0.13.7",
     "resolve": "1.15.0",

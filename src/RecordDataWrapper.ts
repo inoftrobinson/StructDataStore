@@ -180,19 +180,30 @@ export default class RecordDataWrapper<T> {
         if (!(attrsKeyPaths.length > 0)) {
             return {oldValues: {}, subscribersPromise: new Promise(resolve => resolve())};
         }
-
-        const serialized1 = this.RECORD_DATA.toJS();
-        const rar = this.RECORD_DATA.deleteIn(['field1']);
-        // const rar = this.RECORD_DATA.setIn(['field1'], 'lol');
-        const serialized2 = rar.toJS();
-        // todo: fix bug where deleteIn and delete are not working and are not deleting the fields
-
+        /*
+        // todo: move to a mergeDeep of mutators instead of the repeated call to deleteIn
+        map.mergeDeep
+        const mutators = _.transform(attrsKeyPaths, (result: {}, attrKeyPath: F.AutoPath<T, P>) => {
+            const attrKeyPathElements: string[] = attrKeyPath.split('.');
+            result[attrKeyPath] = undefined;
+            let container = result;
+            _.forEach(attrKeyPathElements, (attrKeyPathPart: string) => {
+                const existingSubContainer: {} | undefined = container[attrKeyPathPart];
+                if (existingSubContainer === undefined) {
+                    const newSubContainer = {};
+                    container[attrKeyPathPart] = newSubContainer;
+                    container = newSubContainer;
+                } else {
+                    container = existingSubContainer;
+                }
+            });
+        }, {});
+         */
         let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
         _.forEach(attrsKeyPaths, (attrKeyPath: F.AutoPath<T, P>) => {
             const attrKeyPathElements: string[] = attrKeyPath.split('.');
             alteredRecordData = alteredRecordData.deleteIn(attrKeyPathElements);
         });
-        const serialized3 = alteredRecordData.toJS();
         this.RECORD_DATA = alteredRecordData;
         const subscribersPromise: Promise<any> = this.parentStore.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
         return {subscribersPromise};
