@@ -1,5 +1,5 @@
-import {BaseFieldModel, MapModel} from "../ModelsFields";
-import SectionedObjectStore from "../Stores/ObjectStores/SectionedObjectStore";
+import {BaseFieldModel, MapModel} from "../src/ModelsFields";
+import SectionedObjectStore from "../src/Stores/ObjectStores/SectionedObjectStore";
 
 
 describe('SectionedObjectStore', () => {

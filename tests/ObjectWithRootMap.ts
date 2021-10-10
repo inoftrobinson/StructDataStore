@@ -1,4 +1,4 @@
-import {BasicObjectStore} from "../Stores/ObjectStores/BasicObjectStore";
+import {BasicObjectStore} from "../src/Stores/ObjectStores/BasicObjectStore";
 
 type Model = { [key: string]: { item1: number } };
 
