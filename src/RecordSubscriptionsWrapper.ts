@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 import BaseStore from "./Stores/BaseStore";
 import {separateAttrKeyPath} from "./utils/attrKeyPaths";
 import {asyncTriggerSubscribers} from "./utils/async";
-import {resolveResultOrPromiseOrCallbackResultOrCallbackPromise} from "../../applications/utils/Comparisons";
+import {resolveResultOrPromiseOrCallbackResultOrCallbackPromise} from "./utils/executors";
 
 
 export default class RecordSubscriptionsWrapper<T> {

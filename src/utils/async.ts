@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import {resolveResultOrPromiseOrCallbackResultOrCallbackPromise} from "../../../applications/utils/Comparisons";
+import {resolveResultOrPromiseOrCallbackResultOrCallbackPromise} from "./executors";
 
 
 export async function asyncTriggerSubscribers(subscribers: { [index: number]: () => any }): Promise<any> {

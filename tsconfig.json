@@ -17,8 +17,6 @@
     "types": [
       "underscore",
       "jest",
-      "mocha",
-      "./static/@inoft/eui.d.ts"
     ],
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -31,12 +29,8 @@
     "noImplicitAny": false,
     "suppressImplicitAnyIndexErrors": true,
   },
-  "include": [
-    "./types/custom.d.ts",
-    "./static/@inoft/eui.d.ts",
-  ],
+  "include": [],
   "typeRoots": [
-    "./types",
     "node_modules/@types"
   ],
 }

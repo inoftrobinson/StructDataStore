@@ -1,5 +1,5 @@
-import {BasicObjectStore} from "../Stores/ObjectStores/BasicObjectStore";
-import {BaseFieldModel, MapModel} from "../ModelsFields";
+import {BasicObjectStore} from "../src/Stores/ObjectStores/BasicObjectStore";
+import {BaseFieldModel, MapModel} from "../src/ModelsFields";
 
 interface StoreObjectModel {
     container1: {
