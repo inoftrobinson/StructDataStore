@@ -6,6 +6,7 @@ import {BaseObjectProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
 import BaseObjectStoreV2 from "./BaseObjectStoreV2";
 import {MapModel} from "../../ModelsFields";
+import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
 
 
 export interface BasicObjectStoreProps extends BaseObjectProps {
@@ -15,8 +16,8 @@ export interface BasicObjectStoreProps extends BaseObjectProps {
 }
 
 export class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStoreV2<T> {
-    public CACHED_DATA_WRAPPER?: RecordDataWrapper<T>;
-    private pendingRetrievalPromise?: Promise<RecordDataWrapper<T> | null>;
+    public RECORD_WRAPPER?: ImmutableRecordWrapper<T>;
+    private pendingRetrievalPromise?: Promise<ImmutableRecordWrapper<T> | null>;
 
     constructor(public readonly props: BasicObjectStoreProps) {
         super(props);
@@ -32,9 +33,9 @@ export class BasicObjectStore<T extends { [p: string]: any }> extends BaseObject
                     const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(
                         responseData.data as T, this.props.objectModel
                     ) as immutable.RecordOf<T>;
-                    this.CACHED_DATA_WRAPPER = new RecordDataWrapper<T>(this, recordItem, this.props.objectModel);
+                    this.RECORD_WRAPPER = new RecordDataWrapper<T>(this, recordItem, this.props.objectModel);
                     this.triggerSubscribers();
-                    return this.CACHED_DATA_WRAPPER;
+                    return this.RECORD_WRAPPER;
                 } else {
                     this.props.onRetrievalFailure?.(responseData);
                     return null;
@@ -46,7 +47,7 @@ export class BasicObjectStore<T extends { [p: string]: any }> extends BaseObject
     }
 
     async getData(): Promise<RecordDataWrapper<T> | null> {
-        return this.CACHED_DATA_WRAPPER !== undefined ? this.CACHED_DATA_WRAPPER : this.retrieveAndCacheData();
+        return this.RECORD_WRAPPER !== undefined ? this.RECORD_WRAPPER : this.retrieveAndCacheData();
     }
 
     loadFromData(parsedData: T): { item: immutable.RecordOf<T> | undefined, subscribersPromise: Promise<any> } {
@@ -54,7 +55,7 @@ export class BasicObjectStore<T extends { [p: string]: any }> extends BaseObject
             parsedData, this.props.objectModel
         ) as immutable.RecordOf<T>;
         if (recordItem != null) {
-            this.CACHED_DATA_WRAPPER = new RecordDataWrapper<T>(this, recordItem, this.props.objectModel);
+            this.RECORD_WRAPPER = new RecordDataWrapper<T>(this, recordItem, this.props.objectModel);
             const subscribersPromise: Promise<any> = this.triggerSubscribers();
             return {item: recordItem, subscribersPromise};
         }
