@@ -1,12 +1,12 @@
 import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
-import RecordDataWrapper from "../../RecordDataWrapper";
 import {BaseObjectProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
 import BaseObjectStoreV2 from "./BaseObjectStoreV2";
 import {MapModel} from "../../ModelsFields";
 import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
+import {ObjectFlattenedRecursiveMutatorsResults, ObjectOptionalFlattenedRecursiveMutators} from "../../types";
 
 
 export interface BasicObjectStoreProps extends BaseObjectProps {
@@ -15,7 +15,7 @@ export interface BasicObjectStoreProps extends BaseObjectProps {
     onRetrievalFailure?: (responseData: any) => any;
 }
 
-export class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStoreV2<T> {
+export default class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStoreV2<T> {
     public RECORD_WRAPPER?: ImmutableRecordWrapper<T>;
     private pendingRetrievalPromise?: Promise<ImmutableRecordWrapper<T> | null>;
 
@@ -23,17 +23,17 @@ export class BasicObjectStore<T extends { [p: string]: any }> extends BaseObject
         super(props);
     }
 
-    retrieveAndCacheData(): Promise<RecordDataWrapper<T> | null>  {
+    retrieveAndCacheData(): Promise<ImmutableRecordWrapper<T> | null>  {
         if (this.pendingRetrievalPromise !== undefined) {
             return this.pendingRetrievalPromise;
         } else {
-            const retrievalPromise: Promise<RecordDataWrapper<T> | null> = this.props.retrieveDataCallable().then(responseData => {
+            const retrievalPromise: Promise<ImmutableRecordWrapper<T> | null> = this.props.retrieveDataCallable().then(responseData => {
                 this.pendingRetrievalPromise = undefined;
                 if (responseData.success === true) {
                     const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(
                         responseData.data as T, this.props.objectModel
                     ) as immutable.RecordOf<T>;
-                    this.RECORD_WRAPPER = new RecordDataWrapper<T>(this, recordItem, this.props.objectModel);
+                    this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(this, recordItem, this.props.objectModel);
                     this.triggerSubscribers();
                     return this.RECORD_WRAPPER;
                 } else {
@@ -46,7 +46,7 @@ export class BasicObjectStore<T extends { [p: string]: any }> extends BaseObject
         }
     }
 
-    async getData(): Promise<RecordDataWrapper<T> | null> {
+    async getRecordWrapper(): Promise<ImmutableRecordWrapper<T> | null> {
         return this.RECORD_WRAPPER !== undefined ? this.RECORD_WRAPPER : this.retrieveAndCacheData();
     }
 
@@ -55,7 +55,7 @@ export class BasicObjectStore<T extends { [p: string]: any }> extends BaseObject
             parsedData, this.props.objectModel
         ) as immutable.RecordOf<T>;
         if (recordItem != null) {
-            this.RECORD_WRAPPER = new RecordDataWrapper<T>(this, recordItem, this.props.objectModel);
+            this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(this, recordItem, this.props.objectModel);
             const subscribersPromise: Promise<any> = this.triggerSubscribers();
             return {item: recordItem, subscribersPromise};
         }
@@ -77,41 +77,102 @@ export class BasicObjectStore<T extends { [p: string]: any }> extends BaseObject
     }
 
     async getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<O.Path<T, S.Split<P, ".">>> {
-        const dataWrapper: RecordDataWrapper<T> = await this.getData();
-        return dataWrapper.getAttr<P>(attrKeyPath);
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            return recordWrapper.getAttr<P>(attrKeyPath);
+        }
+        return undefined;
     }
 
     async getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<U.Merge<O.P.Pick<T, S.Split<P, ".">>>> {
-        const dataWrapper: RecordDataWrapper<T> = await this.getData();
-        return dataWrapper.getMultipleAttrs<P>(attrsKeyPaths);
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            return recordWrapper.getMultipleAttrs<P>(attrsKeyPaths);
+        }
+        return undefined;
     }
 
-    async updateAttrWithReturnedSubscribersPromise<P extends string>(attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>): (
-        Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }>
-    ) {
-        const dataWrapper: RecordDataWrapper<T> = await this.getData();
-        return dataWrapper.updateAttr<P>(attrKeyPath, value);
+    async updateAttrWithReturnedSubscribersPromise<P extends string>(
+        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
+    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = recordWrapper.updateAttr(attrKeyPath, value);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+            return {oldValue, subscribersPromise};
+        }
+        return {oldValue: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    async updateMultipleAttrs<P extends string>(
-        mutators: Partial<O.P.Pick<T, S.Split<P, ".">>>
-    ): Promise<U.Merge<O.P.Pick<T, S.Split<P, ".">>> | undefined> {
-        const dataWrapper: RecordDataWrapper<T> = await this.getData();
-        const response = dataWrapper.updateMultipleAttrs<P>(mutators);
-        return response !== undefined ? response : {oldValues: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
+    async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+        mutators: M
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined; subscribersPromise: Promise<any> }> {
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            const oldValues = recordWrapper.updateMultipleAttrs<M>(mutators);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(Object.keys(mutators));
+            return {oldValues, subscribersPromise};
+        }
+        return {oldValues: undefined as any, subscribersPromise: new Promise<void>(resolve => resolve())};
+    }
+
+    async updateDataToAttrWithReturnedSubscribersPromise<P>(
+        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, ".">>
+    ): Promise<{ oldValue: Path<T, Split<P, ".">> | undefined; subscribersPromise: Promise<any> }> {
+        // todo: implement
+        return Promise.resolve(undefined);
+    }
+
+    async updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+        mutators: M
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined; subscribersPromise: Promise<any> }> {
+        // todo: implement
+        return Promise.resolve(undefined);
     }
 
     async deleteAttrWithReturnedSubscribersPromise<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<{ subscribersPromise: Promise<any> }> {
-        const dataWrapper: RecordDataWrapper<T> = await this.getData();
-        const response = dataWrapper.deleteAttr<P>(attrKeyPath);
-        return response !== undefined ? response : {subscribersPromise: new Promise<void>(resolve => resolve())};
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            recordWrapper.deleteAttr<P>(attrKeyPath);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+            return {subscribersPromise};
+        }
+        return {subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    async removeAttrWithReturnedSubscribersPromise<P extends string>(attrKeyPath: F.AutoPath<T, P>): (
-        Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }>
-    ) {
-        const dataWrapper: RecordDataWrapper<T> = await this.getData();
-        const response = dataWrapper.removeAttr<P>(attrKeyPath);
-        return response !== undefined ? response : {oldValue: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
+    async deleteMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
+        attrsKeyPaths: F.AutoPath<T, P>[]
+    ): Promise<{ subscribersPromise: Promise<any> }> {
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            recordWrapper.deleteMultipleAttrs(attrsKeyPaths);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+            return {subscribersPromise};
+        }
+        return {subscribersPromise: new Promise<void>(resolve => resolve())};
+    }
+
+    async removeAttrWithReturnedSubscribersPromise<P extends string>(
+        attrKeyPath: F.AutoPath<T, P>
+    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            const oldValue = recordWrapper.removeAttr<P>(attrKeyPath);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+            return {oldValue, subscribersPromise};
+        }
+        return {oldValue: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
+    }
+
+    async removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
+        attrsKeyPaths: F.AutoPath<T, P>[]
+    ): Promise<{ removedValues: U.Merge<O.Pick<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }> {
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            const removedValues = recordWrapper.removeMultipleAttrs(attrsKeyPaths);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+            return {removedValues, subscribersPromise};
+        }
+        return {removedValues: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 }

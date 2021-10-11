@@ -5,6 +5,7 @@ import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcesso
 import BaseObjectStoreV2 from "./BaseObjectStoreV2";
 import {MapModel} from "../../ModelsFields";
 import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
+import {ObjectFlattenedRecursiveMutatorsResults, ObjectOptionalFlattenedRecursiveMutators} from "../../types";
 
 
 export interface SectionedObjectFieldProps extends BaseObjectProps {
@@ -92,7 +93,7 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
                 this.props.retrieveItemCallable(recordKey).then(responseData => {
                     delete this.pendingKeyItemsRetrievalPromises[recordKey];
                     if (responseData.success === true && responseData.data !== undefined) {
-                        const recordDataWrapper: ImmutableRecordWrapper<T[keyof T]> = this.makeRecordDataWrapperFromData(
+                        const recordDataWrapper: ImmutableRecordWrapper<T[keyof T]> = this.makeRecordDataWrapperFromData<T>(
                             recordKey, responseData.data as T
                         );
                         this.internalCreateUpdateRecordItem(recordKey, recordDataWrapper.RECORD_DATA);
@@ -267,16 +268,9 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         return {oldValue: undefined, subscribersPromise: new Promise(resolve => resolve(undefined))};
     }
 
-    async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
-        // todo: implement
-        return null as any;
-    }
-
-    async updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        mutators: Partial<O.P.Pick<T, S.Split<P, '.'>>>
-    ): Promise<{ oldValues: U.Merge<O.P.Pick<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
+    async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+        mutators: M
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined; subscribersPromise: Promise<any> }> {
         const attrsRelativeMutatorsByItemsKeys: { [itemKey: string]: Partial<O.P.Pick<T[keyof T], S.Split<P, '.'>>> } = (
             this.makeAttrsRelativeMutatorsByItemsKeys<P>(mutators)
         );
@@ -297,6 +291,20 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         );
         const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(Object.keys(mutators));
         return {oldValues: collectedOldValues, subscribersPromise};
+    }
+
+    async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
+        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
+    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
+        // todo: implement
+        return Promise.resolve(undefined);
+    }
+
+    async updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+        mutators: M
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined; subscribersPromise: Promise<any> }> {
+        // todo: implement
+        return Promise.resolve(undefined);
     }
 
     async deleteAttrWithReturnedSubscribersPromise<P extends string>(

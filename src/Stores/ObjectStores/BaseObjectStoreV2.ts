@@ -60,6 +60,16 @@ export default abstract class BaseObjectStoreV2<T extends { [attrKeyPath: string
         return (await this.updateAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 
+    abstract updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+        mutators: M
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined, subscribersPromise: Promise<any> }>;
+
+    async updateMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+        mutators: M
+    ): Promise<ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined> {
+        return (await this.updateMultipleAttrsWithReturnedSubscribersPromise(mutators)).oldValues;
+    }
+
     abstract updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
     ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }>;
@@ -70,14 +80,14 @@ export default abstract class BaseObjectStoreV2<T extends { [attrKeyPath: string
         return (await this.updateDataToAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 
-    abstract updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+    abstract updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined, subscribersPromise: Promise<any> }>;
 
-    async updateMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+    async updateDataToMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
     ): Promise<ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined> {
-        return (await this.updateMultipleAttrsWithReturnedSubscribersPromise(mutators)).oldValues;
+        return (await this.updateDataToMultipleAttrsWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValues;
     }
 
     abstract deleteAttrWithReturnedSubscribersPromise<P extends string>(
