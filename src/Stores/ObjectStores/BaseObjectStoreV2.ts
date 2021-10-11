@@ -1,9 +1,13 @@
-import {F, O, S, U} from 'ts-toolbelt';
+import {F, O, S, U, L} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {MapModel} from "../../ModelsFields";
 import BaseStore from "../BaseStore";
 import SubscriptionsManager from "../../SubscriptionsManager";
+import {
+    ObjectFlattenedRecursiveMutatorsResults,
+    ObjectOptionalFlattenedRecursiveMutators,
+} from "../../types";
 
 
 export interface BaseObjectProps {
@@ -66,13 +70,13 @@ export default abstract class BaseObjectStoreV2<T extends { [attrKeyPath: string
         return (await this.updateDataToAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 
-    abstract updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        mutators: Partial<O.P.Pick<T, S.Split<P, '.'>>>
-    ): Promise<{ oldValues: U.Merge<O.P.Pick<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
+    abstract updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+        mutators: M
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined, subscribersPromise: Promise<any> }>;
 
-    async updateMultipleAttrs<P extends string>(
-        mutators: Partial<O.P.Pick<T, S.Split<P, '.'>>>
-    ): Promise<U.Merge<O.P.Pick<T, S.Split<P, '.'>>> | undefined> {
+    async updateMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+        mutators: M
+    ): Promise<ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined> {
         return (await this.updateMultipleAttrsWithReturnedSubscribersPromise(mutators)).oldValues;
     }
 

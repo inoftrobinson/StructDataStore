@@ -35,7 +35,7 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
     }
 
     protected async getMatchingDataWrapper<P extends string>(attrKeyPath: F.AutoPath<T, P>): (
-        Promise<{ dataWrapper: ImmutableRecordWrapper<T[keyof T]>, relativeAttrKeyPath: F.AutoPath<T[keyof T], P> | null }>
+        Promise<{ dataWrapper: ImmutableRecordWrapper<T[keyof T]> | null, relativeAttrKeyPath: F.AutoPath<T[keyof T], P> | null }>
     ) {
         const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);
         const dataWrapper: ImmutableRecordWrapper<T[keyof T]> | null = await this.getDataItem(itemKey);
@@ -256,7 +256,9 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         { oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }
     ) {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
-        return dataWrapper.updateAttr(relativeAttrKeyPath, value);
+        const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = dataWrapper.updateAttr(relativeAttrKeyPath, value);
+        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+        return {oldValue, subscribersPromise};
     }
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
@@ -275,7 +277,6 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         const dataWrappers: { [itemKey: string]: ImmutableRecordWrapper<T[keyof T]> | null } = await (
             this.getMultipleRecordItems(Object.keys(attrsRelativeMutatorsByItemsKeys))
         );
-        const collectedSubscribersPromises: Promise<any>[] = [];
         const collectedOldValues: U.Merge<O.P.Pick<T, S.Split<P, ".">>> = _.transform(attrsRelativeMutatorsByItemsKeys,
             (result: {}, relativeMutatorsToExecute: Partial<O.P.Pick<T[keyof T], S.Split<P, '.'>>>, itemKey: string) => {
                 const matchingDataWrapper: ImmutableRecordWrapper<T[keyof T]> | null = dataWrappers[itemKey];
@@ -285,12 +286,10 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
                         const attrAbsoluteKeyPath: string = `${itemKey}.${attrRelativeKeyPath}`;
                         result[attrAbsoluteKeyPath] = attrOldValue;
                     });
-                    // collectedSubscribersPromises.push(subscribersPromise);
                 }
             }, {}
         );
         const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(Object.keys(mutators));
-        // const overallSubscribersPromise: Promise<any> = Promise.all(collectedSubscribersPromises);
         return {oldValues: collectedOldValues, subscribersPromise};
     }
 
@@ -298,36 +297,37 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         attrKeyPath: F.AutoPath<T, P>
     ): Promise<{ subscribersPromise: Promise<any> }> {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
-        return dataWrapper.deleteAttr(relativeAttrKeyPath);
+        dataWrapper.deleteAttr(relativeAttrKeyPath);
+        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+        return {subscribersPromise};
     }
 
-    async deleteMultipleAttrsWithReturnedSubscribersPromise<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): (
-        Promise<{ subscribersPromise: Promise<any> }>
-    ) {
+    async deleteMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
+        attrsKeyPaths: F.AutoPath<T, P>[]
+    ): Promise<{ subscribersPromise: Promise<any> }> {
         const attrsRelativeKeyPathsByItemsKeys: { [itemKey: string]: F.AutoPath<T[keyof T], P>[] } = (
             this.makeAttrsRelativeKeyPathsByItemsKeys(attrsKeyPaths)
         );
         const dataWrappers: { [itemKey: string]: ImmutableRecordWrapper<T[keyof T]> | null } = await (
             this.getMultipleRecordItems(Object.keys(attrsRelativeKeyPathsByItemsKeys))
         );
-        const collectedSubscribersPromises: Promise<any>[] = _.map(attrsRelativeKeyPathsByItemsKeys,
-            (relativeAttrsKeysPathsToDelete: F.AutoPath<T[keyof T], P>[], itemKey: string) => {
-                const matchingDataWrapper: ImmutableRecordWrapper<T[keyof T]> | null = dataWrappers[itemKey];
-                if (matchingDataWrapper != null) {
-                    const {subscribersPromise} = matchingDataWrapper.deleteMultipleAttrs(relativeAttrsKeysPathsToDelete);
-                    return subscribersPromise;
-                }
+        _.forEach(attrsRelativeKeyPathsByItemsKeys, (relativeAttrsKeysPathsToDelete: F.AutoPath<T[keyof T], P>[], itemKey: string) => {
+            const matchingDataWrapper: ImmutableRecordWrapper<T[keyof T]> | null = dataWrappers[itemKey];
+            if (matchingDataWrapper != null) {
+                matchingDataWrapper.deleteMultipleAttrs(relativeAttrsKeysPathsToDelete);
             }
-        );
-        const overallSubscribersPromise: Promise<any> = Promise.all(collectedSubscribersPromises);
-        return {subscribersPromise: overallSubscribersPromise};
+        });
+        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+        return {subscribersPromise};
     }
 
     async removeAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>
     ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
-        return dataWrapper.removeAttr(relativeAttrKeyPath);
+        const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = dataWrapper.removeAttr(relativeAttrKeyPath);
+        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+        return {oldValue, subscribersPromise};
     }
 
     async removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
@@ -339,22 +339,19 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         const dataWrappers: { [itemKey: string]: ImmutableRecordWrapper<T[keyof T]> | null } = await (
             this.getMultipleRecordItems(Object.keys(attrsRelativeKeyPathsByItemsKeys))
         );
-        const collectedSubscribersPromises: Promise<any>[] = [];
         const collectedOldValues: U.Merge<O.P.Pick<T, S.Split<P, ".">>> = _.transform(attrsRelativeKeyPathsByItemsKeys,
             (result: {}, relativeAttrsKeysPathsToRemove: F.AutoPath<T[keyof T], P>[], itemKey: string) => {
                 const matchingDataWrapper: ImmutableRecordWrapper<T[keyof T]> | null = dataWrappers[itemKey];
                 if (matchingDataWrapper != null) {
-                    const {oldValues, subscribersPromise} = matchingDataWrapper.removeMultipleAttrs(relativeAttrsKeysPathsToRemove);
+                    const oldValues = matchingDataWrapper.removeMultipleAttrs(relativeAttrsKeysPathsToRemove);
                     _.forEach(oldValues, (attrOldValue: any, attrRelativeKeyPath: string) => {
                         const attrAbsoluteKeyPath: string = `${itemKey}.${attrRelativeKeyPath}`;
                         result[attrAbsoluteKeyPath] = attrOldValue;
                     });
-                    collectedSubscribersPromises.push(subscribersPromise);
-                    return oldValues;
                 }
             }, {}
         );
-        const overallSubscribersPromise = Promise.all(collectedSubscribersPromises);
-        return {oldValues: collectedOldValues, subscribersPromise: overallSubscribersPromise};
+        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+        return {oldValues: collectedOldValues, subscribersPromise};
     }
 }

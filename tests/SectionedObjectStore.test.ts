@@ -10,7 +10,7 @@ describe('SectionedObjectStore', () => {
             }
         }
         const store = new SectionedObjectStore<StoreModel>({
-            retrieveDataCallable: () => Promise.resolve(undefined),
+            retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BaseFieldModel({})
@@ -34,7 +34,7 @@ describe('SectionedObjectStore', () => {
             }
         }
         const store = new SectionedObjectStore<StoreModel>({
-            retrieveDataCallable: () => Promise.resolve(undefined),
+            retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BaseFieldModel({}),
@@ -61,7 +61,26 @@ describe('SectionedObjectStore', () => {
     });
 
     test('simple updateAttr', async () => {
+        interface StoreModel {
+            container1: {
+                field1: string;
+            }
+        }
+        const store = new SectionedObjectStore<StoreModel>({
+            retrieveItemCallable: () => Promise.resolve(undefined),
+            objectModel: new MapModel({fields: {
+                'container1': new MapModel({fields: {
+                    'field1': new BaseFieldModel({})
+                }})
+            }})}
+        );
+        store.loadFromData({'container1': {'field1': "c1.f1.alteration1"}});
 
+        const oldValue: string | undefined = await store.updateAttr('container1.field1', "c1.f1.alteration2");
+        expect(oldValue).toEqual("c1.f1.alteration1");
+
+        const retrievedNewValue: string | undefined = await store.getAttr('container1.field1');
+        expect(retrievedNewValue).toEqual("c1.f1.alteration2");
     });
 
     test('simple updateMultipleAttrs', async () => {
@@ -76,7 +95,7 @@ describe('SectionedObjectStore', () => {
             }
         }
         const store = new SectionedObjectStore<StoreModel>({
-            retrieveDataCallable: () => Promise.resolve(undefined),
+            retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BaseFieldModel({}),
@@ -92,7 +111,15 @@ describe('SectionedObjectStore', () => {
             'container1': {'field1': "c1.f1.alteration1", 'field2': "c1.f2.alteration1"},
             'container2': {'field1': "c2.f1.alteration1", 'field2': "c2.f2.alteration1"},
         });
-        const oldFieldsValues: {} = await store.updateMultipleAttrs({
+        /*
+        {
+            'container1.field1'?: string,
+            'container1.field2'?: string,
+            'container2.field1'?: string,
+        } | undefined
+         */
+
+        const oldFieldsValues = await store.updateMultipleAttrs({
             'container1.field1': "c1.f1.alteration2",
             'container1.field2': "c1.f2.alteration2",
             'container2.field1': "c2.f1.alteration2"
@@ -115,7 +142,27 @@ describe('SectionedObjectStore', () => {
     });
 
     test('simple deleteAttr', async () => {
+        interface StoreModel {
+            container1: {
+                field1: string;
+            }
+        }
+        const store = new SectionedObjectStore<StoreModel>({
+            retrieveItemCallable: () => Promise.resolve(undefined),
+            objectModel: new MapModel({fields: {
+                'container1': new MapModel({fields: {
+                    'field1': new BaseFieldModel({})
+                }})
+            }})}
+        );
+        store.loadFromData({'container1': {'field1': "c1.f1"}});
 
+        const retrievedValueBeforeDeletion: string | undefined = await store.getAttr('container1.field1');
+        expect(retrievedValueBeforeDeletion).toEqual("c1.f1");
+
+        await store.deleteAttr('container1.field1');
+        const retrievedValueAfterDeletion: string | undefined = await store.getAttr('container1.field1');
+        expect(retrievedValueAfterDeletion).toEqual(undefined);
     });
 
     test('simple deleteMultipleAttrs', async () => {
@@ -130,7 +177,7 @@ describe('SectionedObjectStore', () => {
             }
         }
         const store = new SectionedObjectStore<StoreModel>({
-            retrieveDataCallable: () => Promise.resolve(undefined),
+            retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BaseFieldModel({}),
@@ -162,11 +209,72 @@ describe('SectionedObjectStore', () => {
     });
 
     test('simple removeAttr', async () => {
+        interface StoreModel {
+            container1: {
+                field1: string;
+            }
+        }
+        const store = new SectionedObjectStore<StoreModel>({
+            retrieveItemCallable: () => Promise.resolve(undefined),
+            objectModel: new MapModel({fields: {
+                'container1': new MapModel({fields: {
+                    'field1': new BaseFieldModel({})
+                }})
+            }})}
+        );
+        store.loadFromData({'container1': {'field1': "c1.f1"}});
 
+        const retrievedValueBeforeRemoval: string | undefined = await store.getAttr('container1.field1');
+        expect(retrievedValueBeforeRemoval).toEqual("c1.f1");
+
+        const removedValue: string | undefined = await store.removeAttr('container1.field1');
+        expect(removedValue).toEqual("c1.f1");
+
+        const retrievedValueAfterRemoval: string | undefined = await store.getAttr('container1.field1');
+        expect(retrievedValueAfterRemoval).toEqual(undefined);
     });
 
     test('simple removeMultipleAttrs', async () => {
+        interface StoreModel {
+            container1: {
+                field1: string;
+                field2: string;
+            },
+            container2: {
+                field1: string;
+                field2: string;
+            }
+        }
+        const store = new SectionedObjectStore<StoreModel>({
+            retrieveItemCallable: () => Promise.resolve(undefined),
+            objectModel: new MapModel({fields: {
+                'container1': new MapModel({fields: {
+                    'field1': new BaseFieldModel({}),
+                    'field2': new BaseFieldModel({})
+                }}),
+                'container2': new MapModel({fields: {
+                    'field1': new BaseFieldModel({}),
+                    'field2': new BaseFieldModel({})
+                }}),
+            }})}
+        );
+        store.loadFromData({
+            'container1': {'field1': "c1.f1", 'field2': "c1.f2"},
+            'container2': {'field1': "c2.f1", 'field2': "c2.f2"},
+        });
+        await store.deleteMultipleAttrs([
+            'container1.field1', 'container1.field2', 'container2.field1'
+        ]);
 
+        const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([
+            'container1.field1', 'container1.field2', 'container2.field1', 'container2.field2'
+        ]);
+        expect(retrievedFieldsValuesAfterUpdate).toEqual({
+            'container1.field1': undefined,
+            'container1.field2': undefined,
+            'container2.field1': undefined,
+            'container2.field2': "c2.f2",
+        });
     });
 
     test('listeners sharing', async () => {
@@ -180,7 +288,7 @@ describe('SectionedObjectStore', () => {
             }
         }
         const store = new SectionedObjectStore<StoreModel>({
-            retrieveDataCallable: () => Promise.resolve(undefined),
+            retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BaseFieldModel({}),
@@ -222,7 +330,7 @@ describe('SectionedObjectStore', () => {
             }
         }
         const store = new SectionedObjectStore<StoreModel>({
-            retrieveDataCallable: () => Promise.resolve(undefined),
+            retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BaseFieldModel({}),
