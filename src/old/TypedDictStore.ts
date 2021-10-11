@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import {RecordOf} from 'immutable';
-import BaseStore from "./BaseStore";
+import BaseStore from "../Stores/BaseStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../DataProcessors";
 import {MapModel} from "../ModelsFields";
 import {CreateUpdateRecordResponse} from "./ObjectStores/ObjectStores";

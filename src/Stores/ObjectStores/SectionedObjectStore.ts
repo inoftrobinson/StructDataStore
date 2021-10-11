@@ -2,7 +2,7 @@ import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
-import BaseObjectStoreV2 from "./BaseObjectStoreV2";
+import BaseObjectStore from "./BaseObjectStore";
 import {MapModel} from "../../ModelsFields";
 import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
 import {ObjectFlattenedRecursiveMutatorsResults, ObjectOptionalFlattenedRecursiveMutators} from "../../types";
@@ -15,7 +15,7 @@ export interface SectionedObjectFieldProps extends BaseObjectProps {
     onItemRetrievalFailure?: (responseData: any) => any;
 }
 
-export default class SectionedObjectStore<T extends { [p: string]: any }> extends BaseObjectStoreV2<T> {
+export default class SectionedObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T> {
     public RECORD_WRAPPERS: { [key: string]: ImmutableRecordWrapper<T[keyof T]> };
     private readonly pendingKeyItemsRetrievalPromises: { [key: string]: Promise<immutable.RecordOf<T[keyof T]> | null> };
 

@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {BaseObjectProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
-import BaseObjectStoreV2 from "./BaseObjectStoreV2";
+import BaseObjectStore from "./BaseObjectStore";
 import {MapModel} from "../../ModelsFields";
 import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
 import {ObjectFlattenedRecursiveMutatorsResults, ObjectOptionalFlattenedRecursiveMutators} from "../../types";
@@ -15,7 +15,7 @@ export interface BasicObjectStoreProps extends BaseObjectProps {
     onRetrievalFailure?: (responseData: any) => any;
 }
 
-export default class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStoreV2<T> {
+export default class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T> {
     public RECORD_WRAPPER?: ImmutableRecordWrapper<T>;
     private pendingRetrievalPromise?: Promise<ImmutableRecordWrapper<T> | null>;
 

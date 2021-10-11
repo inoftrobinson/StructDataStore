@@ -3,32 +3,32 @@ import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "./DataProcessors";
 import {MapModel} from "./ModelsFields";
-import BaseObjectStoreV2 from "./Stores/ObjectStores/BaseObjectStoreV2";
+import BaseObjectStore from "./Stores/ObjectStores/BaseObjectStore";
 
 
 export default class ImmutableRecordWrapper<T> {
     constructor(
-        public readonly parentStore: BaseObjectStoreV2<T>,
+        public readonly parentStore: BaseObjectStore<T>,
         public RECORD_DATA: immutable.RecordOf<T>,
         public readonly itemModel: MapModel
     ) {
     }
 
-    static fromRecord<T extends {}>(parentStore: BaseObjectStoreV2<T>, itemModel: MapModel, record: immutable.RecordOf<T>) {
+    static fromRecord<T extends {}>(parentStore: BaseObjectStore<T>, itemModel: MapModel, record: immutable.RecordOf<T>) {
         return new ImmutableRecordWrapper<T>(parentStore, record, itemModel);
     }
 
-    static fromData<T>(parentStore: BaseObjectStoreV2<T>, itemModel: MapModel, data: T) {
+    static fromData<T>(parentStore: BaseObjectStore<T>, itemModel: MapModel, data: T) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel(data, itemModel) as immutable.RecordOf<T>;
         return new ImmutableRecordWrapper<T>(parentStore, record, itemModel);
     }
 
-    static fromEmpty<T>(parentStore: BaseObjectStoreV2<T>, itemModel: MapModel) {
+    static fromEmpty<T>(parentStore: BaseObjectStore<T>, itemModel: MapModel) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel({}, itemModel) as immutable.RecordOf<T>;
         return new ImmutableRecordWrapper<T>(parentStore, record, itemModel);
     }
 
-    /*static fromNull<T>(parentStore: BaseObjectStoreV2<T>) {
+    /*static fromNull<T>(parentStore: BaseObjectStore<T>) {
         return new ImmutableRecordWrapper<T>(parentStore);
     }*/
 

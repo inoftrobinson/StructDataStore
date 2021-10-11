@@ -6,7 +6,7 @@ import RecordDataWrapper from "../../RecordDataWrapper";
 import BaseObjectStore, {BaseObjectProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
 import RecordSubscriptionsWrapper from "../../RecordSubscriptionsWrapper";
-import BaseObjectStoreV2 from "./BaseObjectStoreV2";
+import BaseObjectStoreV2 from "./BaseObjectStore";
 
 
 export interface ObjectStoreProps extends BaseObjectProps {
