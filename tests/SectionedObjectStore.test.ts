@@ -168,4 +168,91 @@ describe('SectionedObjectStore', () => {
     test('simple removeMultipleAttrs', async () => {
 
     });
+
+    test('listeners sharing', async () => {
+        interface StoreModel {
+            container1: {
+                field1: string;
+                field2: string;
+            },
+            container2: {
+                field1: string;
+            }
+        }
+        const store = new SectionedObjectStore<StoreModel>({
+            retrieveDataCallable: () => Promise.resolve(undefined),
+            objectModel: new MapModel({fields: {
+                'container1': new MapModel({fields: {
+                    'field1': new BaseFieldModel({}),
+                    'field2': new BaseFieldModel({}),
+                }}),
+                'container2': new MapModel({fields: {
+                    'field1': new BaseFieldModel({}),
+                }})
+            }})}
+        );
+        store.loadFromData({
+            'container1': {'field1': "c1.f1.alteration1", 'field2': "c1.f2.alteration1"},
+            'container2': {'field1': "c2.f1.alteration1"}
+        });
+
+        let listenersTriggersCounter: number = 0;
+        store.subscribeMultipleAttrs(
+            ['container1.field1', 'container1.field2', 'container2.field1'],
+            () => {
+                listenersTriggersCounter += 1;
+            }
+        );
+        await store.updateMultipleAttrs({
+            'container1.field1': "c1.f1.alteration2",
+            'container1.field2': "c1.f2.alteration2",
+            'container2.field1': "c2.f1.alteration2",
+        });
+        expect(listenersTriggersCounter).toEqual(1);
+    });
+
+    test('listeners separation', async () => {
+        interface StoreModel {
+            container1: {
+                field1: string;
+                field2: string;
+            },
+            container2: {
+                field1: string;
+            }
+        }
+        const store = new SectionedObjectStore<StoreModel>({
+            retrieveDataCallable: () => Promise.resolve(undefined),
+            objectModel: new MapModel({fields: {
+                'container1': new MapModel({fields: {
+                    'field1': new BaseFieldModel({}),
+                    'field2': new BaseFieldModel({}),
+                }}),
+                'container2': new MapModel({fields: {
+                    'field1': new BaseFieldModel({}),
+                }})
+            }})}
+        );
+        store.loadFromData({
+            'container1': {'field1': "c1.f1.alteration1", 'field2': "c1.f2.alteration1"},
+            'container2': {'field1': "c2.f1.alteration1"}
+        });
+
+        let listenersTriggersCounter: number = 0;
+        store.subscribeToAttr('container1.field1',() => {
+            listenersTriggersCounter += 1;
+        });
+        store.subscribeToAttr('container1.field2',() => {
+            listenersTriggersCounter += 1;
+        });
+        store.subscribeToAttr('container2.field1',() => {
+            listenersTriggersCounter += 1;
+        });
+        await store.updateMultipleAttrs({
+            'container1.field1': "c1.f1.alteration2",
+            'container1.field2': "c1.f2.alteration2",
+            'container2.field1': "c2.f1.alteration2",
+        });
+        expect(listenersTriggersCounter).toEqual(3);
+    });
 });
