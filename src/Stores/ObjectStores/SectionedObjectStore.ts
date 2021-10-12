@@ -2,7 +2,7 @@ import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
-import BaseObjectStore from "./BaseObjectStore";
+import BaseObjectStore, {BaseObjectProps} from "./BaseObjectStore";
 import {MapModel} from "../../ModelsFields";
 import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
 import {ObjectFlattenedRecursiveMutatorsResults, ObjectOptionalFlattenedRecursiveMutators} from "../../types";
@@ -17,7 +17,7 @@ export interface SectionedObjectFieldProps extends BaseObjectProps {
 
 export default class SectionedObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T> {
     public RECORD_WRAPPERS: { [key: string]: ImmutableRecordWrapper<T[keyof T]> };
-    private readonly pendingKeyItemsRetrievalPromises: { [key: string]: Promise<immutable.RecordOf<T[keyof T]> | null> };
+    private readonly pendingKeyItemsRetrievalPromises: { [key: string]: Promise<ImmutableRecordWrapper<T[keyof T]> | null> };
 
     constructor(public readonly props: SectionedObjectFieldProps) {
         super(props);
@@ -44,7 +44,7 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
     }
 
     makeRecordDataWrapperFromItem(recordKey: string, recordItem: immutable.RecordOf<T[keyof T]>): ImmutableRecordWrapper<T[keyof T]> {
-        return new ImmutableRecordWrapper<T[keyof T]>(this, recordItem, this.props.objectModel.props.fields[recordKey]);
+        return new ImmutableRecordWrapper<T[keyof T]>(recordItem, this.props.objectModel.props.fields[recordKey]);
     }
 
     makeRecordDataWrapperFromData(recordKey: string, recordData: T): ImmutableRecordWrapper<T[keyof T]> | null {
@@ -72,7 +72,7 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
     }
      */
 
-    loadFromData(data: T): { item: immutable.RecordOf<T> | undefined; subscribersPromise: Promise<any> } {
+    loadFromData(data: T): { subscribersPromise: Promise<any> } {
         const recordWrappers: { [key: string]: ImmutableRecordWrapper<T[keyof T]> } = _.transform(
             data, (result: {}, itemData: T, key: string) => {
                 result[key] = this.makeRecordDataWrapperFromData(key, itemData)
@@ -81,7 +81,7 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         this.RECORD_WRAPPERS = recordWrappers;
         const subscribersPromise: Promise<any> = this.triggerSubscribers();
         // const records = _.mapValues(recordsDataWrappers, (recordDataWrapperItem: ImmutableRecordWrapper<T>) => recordDataWrapperItem.RECORD_DATA);
-        return {recordWrappers, subscribersPromise};
+        return {subscribersPromise};
     }
 
     retrieveAndCacheRecordItem(recordKey: string): Promise<ImmutableRecordWrapper<T[keyof T]> | null>  {
@@ -93,7 +93,7 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
                 this.props.retrieveItemCallable(recordKey).then(responseData => {
                     delete this.pendingKeyItemsRetrievalPromises[recordKey];
                     if (responseData.success === true && responseData.data !== undefined) {
-                        const recordDataWrapper: ImmutableRecordWrapper<T[keyof T]> = this.makeRecordDataWrapperFromData<T>(
+                        const recordDataWrapper: ImmutableRecordWrapper<T[keyof T]> | null = this.makeRecordDataWrapperFromData(
                             recordKey, responseData.data as T
                         );
                         this.internalCreateUpdateRecordItem(recordKey, recordDataWrapper.RECORD_DATA);
@@ -124,13 +124,13 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         return existingRecordWrapper?.RECORD_DATA;
     }
 
-    async retrieveAndCacheMultipleRecordItems(recordKeys: string[]): Promise<{ [key: string]: immutable.RecordOf<T[keyof T]> | null }>  {
+    async retrieveAndCacheMultipleRecordItems(recordKeys: string[]): Promise<{ [key: string]: ImmutableRecordWrapper<T[keyof T]> | null }>  {
         const keysRequiringRetrieval: string[] = [];
-        const keysPromises: Promise<{ key: string, record: immutable.RecordOf<T[keyof T]> | null }>[] = [];
+        const keysPromises: Promise<{ key: string, record: ImmutableRecordWrapper<T[keyof T]> | null }>[] = [];
         recordKeys.forEach((key: string) => {
-            const existingKeyPendingPromise: Promise<immutable.RecordOf<T> | null> | undefined = this.pendingKeyItemsRetrievalPromises[key];
+            const existingKeyPendingPromise: Promise<ImmutableRecordWrapper<T> | null> | undefined = this.pendingKeyItemsRetrievalPromises[key];
             if (existingKeyPendingPromise !== undefined) {
-                keysPromises.push(existingKeyPendingPromise.then((record: immutable.RecordOf<T[keyof T]> | null) => ({key, record})));
+                keysPromises.push(existingKeyPendingPromise.then((record: ImmutableRecordWrapper<T[keyof T]> | null) => ({key, record})));
             } else {
                 keysRequiringRetrieval.push(key);
             }
@@ -138,19 +138,19 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         if (keysRequiringRetrieval.length > 0) {
             const baseMultiItemsRetrievalPromise = this.props.retrieveMultipleItemsCallable(keysRequiringRetrieval);
             keysRequiringRetrieval.forEach((recordKey: string) => {
-                const keyItemRetrievalPromise: Promise<immutable.RecordOf<T[keyof T]> | null> = baseMultiItemsRetrievalPromise.then(responseData => {
+                const keyItemRetrievalPromise: Promise<ImmutableRecordWrapper<T[keyof T]> | null> = baseMultiItemsRetrievalPromise.then(responseData => {
                     delete this.pendingKeyItemsRetrievalPromises[recordKey];
                     if (responseData.success === true && responseData.data !== undefined) {
                         const itemsDataContainer: { [itemKey: string]: { [attrKey: string]: any } } = responseData.data;
                         const itemData: { [attrKey: string]: any } | undefined = itemsDataContainer[recordKey];
                         if (itemData !== undefined) {
-                            const recordDataWrapper: ImmutableRecordWrapper<T[keyof T]> = (
+                            const recordWrapper: ImmutableRecordWrapper<T[keyof T]> | null = (
                                 this.makeRecordDataWrapperFromData(recordKey, itemData as T[keyof T])
                             );
-                            this.internalCreateUpdateRecordItem(recordKey, recordDataWrapper.RECORD_DATA);
+                            this.internalCreateUpdateRecordItem(recordKey, recordWrapper?.RECORD_DATA);
                             // this.triggerSubscribersForKey(recordKey);
                             this.triggerSubscribersForAttr(recordKey);
-                            return recordDataWrapper;
+                            return recordWrapper;
                         }
                     }
                     this.props.onItemRetrievalFailure?.(responseData);
@@ -159,12 +159,12 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
                     return null;
                 });
                 this.pendingKeyItemsRetrievalPromises[recordKey] = keyItemRetrievalPromise;
-                keysPromises.push(keyItemRetrievalPromise.then((record: immutable.RecordOf<T[keyof T]> | null) => ({key: recordKey, record})));
+                keysPromises.push(keyItemRetrievalPromise.then((record: ImmutableRecordWrapper<T[keyof T]> | null) => ({key: recordKey, record})));
             });
         }
-        const keysContainers: { key: string, record: immutable.RecordOf<T[keyof T]> | null }[] = await Promise.all(keysPromises);
+        const keysContainers: { key: string, record: ImmutableRecordWrapper<T[keyof T]> | null }[] = await Promise.all(keysPromises);
         this.triggerSubscribers();
-        return _.transform(keysContainers, (result: { [key: string]: any }, container: { key: string, record: immutable.RecordOf<T[keyof T]> | null }) => {
+        return _.transform(keysContainers, (result: { [key: string]: any }, container: { key: string, record: ImmutableRecordWrapper<T[keyof T]> | null }) => {
             result[container.key] = container.record;
         }, {});
     }
@@ -190,15 +190,15 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         }
     }
 
-    async getRecordItem(key: string): Promise<immutable.RecordOf<T[keyof T]> | null> {
-        return this.RECORD_WRAPPERS[key] !== undefined ? this.RECORD_WRAPPERS[key].RECORD_DATA : this.retrieveAndCacheRecordItem(key);
+    async getRecordItem(key: string): Promise<ImmutableRecordWrapper<T[keyof T]> | null> {
+        return this.RECORD_WRAPPERS[key] !== undefined ? this.RECORD_WRAPPERS[key] : this.retrieveAndCacheRecordItem(key);
     }
 
     async getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<O.Path<T, S.Split<P, '.'>> | undefined> {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
         if (dataWrapper != null) {
             if (relativeAttrKeyPath != null) {
-                return dataWrapper.getAttr<F.AutoPath<T[keyof T], P>>(relativeAttrKeyPath);
+                return dataWrapper.getAttr(relativeAttrKeyPath);
             } else {
                 // todo: update entire attr wrapper, maybe add a case of updateAttr in the
                 //  dataWrapper, where if an empty string is passed, the root object is updated ?
@@ -234,14 +234,14 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         }, {});
     }
 
-    async getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<U.Merge<O.P.Pick<T, S.Split<P, ".">>>> {
+    async getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Optional<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>> {
         const attrsRelativeKeyPathsByItemsKeys: { [itemKey: string]: F.AutoPath<T[keyof T], P>[] } = (
             this.makeAttrsRelativeKeyPathsByItemsKeys(attrsKeyPaths)
         );
         const dataWrappers: { [itemKey: string]: ImmutableRecordWrapper<T[keyof T]> | null } = await (
             this.getMultipleRecordItems(Object.keys(attrsRelativeKeyPathsByItemsKeys))
         );
-        const retrievedValues: U.Merge<O.P.Pick<T, S.Split<P, ".">>> = _.transform(attrsRelativeKeyPathsByItemsKeys,
+        const retrievedValues: { [attrKeyPath: string]: any } = _.transform(attrsRelativeKeyPathsByItemsKeys,
             (result: {}, relativeAttrsKeysPathsToRetrieve: F.AutoPath<T[keyof T], P>[], itemKey: string) => {
                 const matchingDataWrapper: ImmutableRecordWrapper<T[keyof T]> | null = dataWrappers[itemKey];
                 if (matchingDataWrapper != null) {
@@ -253,17 +253,21 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
                 }
             }, {}
         );
-        return retrievedValues;
+        return retrievedValues as U.Merge<O.P.Pick<T, S.Split<P, ".">>>;
     }
 
-    async updateAttrWithReturnedSubscribersPromise<P extends string>(attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>): (
-        { oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }
-    ) {
+    async updateAttrWithReturnedSubscribersPromise<P extends string>(
+        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
+    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
         if (dataWrapper != null) {
-            const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = dataWrapper.updateAttr(relativeAttrKeyPath, value);
-            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
-            return {oldValue, subscribersPromise};
+            if (relativeAttrKeyPath != null) {
+                const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = dataWrapper.updateAttr(relativeAttrKeyPath, value);
+                const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+                return {oldValue, subscribersPromise};
+            } else {
+                // todo: handle null relativeAttrKeyPath
+            }
         }
         return {oldValue: undefined, subscribersPromise: new Promise(resolve => resolve(undefined))};
     }
@@ -297,14 +301,14 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
     ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
         // todo: implement
-        return Promise.resolve(undefined);
+        return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
 
     async updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined; subscribersPromise: Promise<any> }> {
         // todo: implement
-        return Promise.resolve(undefined);
+        return {oldValues: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
 
     async deleteAttrWithReturnedSubscribersPromise<P extends string>(
@@ -312,9 +316,13 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
     ): Promise<{ subscribersPromise: Promise<any> }> {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
         if (dataWrapper != null) {
-            dataWrapper.deleteAttr(relativeAttrKeyPath);
-            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
-            return {subscribersPromise};
+            if (relativeAttrKeyPath != null) {
+                dataWrapper.deleteAttr(relativeAttrKeyPath);
+                const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+                return {subscribersPromise};
+            } else {
+                // todo: handle null relativeAttrKeyPath
+            }
         }
         return {subscribersPromise: new Promise(resolve => resolve(undefined))};
     }
@@ -343,11 +351,15 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
     ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
         if (dataWrapper != null) {
-            const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = dataWrapper.removeAttr(relativeAttrKeyPath);
-            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
-            return {oldValue, subscribersPromise};
+            if (relativeAttrKeyPath != null) {
+                const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = dataWrapper.removeAttr(relativeAttrKeyPath);
+                const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+                return {oldValue, subscribersPromise};
+            } else {
+                // todo: handle null relativeAttrKeyPath
+            }
         }
-        return {subscribersPromise: new Promise(resolve => resolve(undefined))};
+        return {oldValue: undefined, subscribersPromise: new Promise(resolve => resolve(undefined))};
     }
 
     async removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
@@ -359,7 +371,7 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
         const dataWrappers: { [itemKey: string]: ImmutableRecordWrapper<T[keyof T]> | null } = await (
             this.getMultipleRecordItems(Object.keys(attrsRelativeKeyPathsByItemsKeys))
         );
-        const collectedOldValues: U.Merge<O.P.Pick<T, S.Split<P, ".">>> = _.transform(attrsRelativeKeyPathsByItemsKeys,
+        const collectedOldValues: { [removedAttrKeyPath: string]: any } = _.transform(attrsRelativeKeyPathsByItemsKeys,
             (result: {}, relativeAttrsKeysPathsToRemove: F.AutoPath<T[keyof T], P>[], itemKey: string) => {
                 const matchingDataWrapper: ImmutableRecordWrapper<T[keyof T]> | null = dataWrappers[itemKey];
                 if (matchingDataWrapper != null) {
@@ -372,6 +384,6 @@ export default class SectionedObjectStore<T extends { [p: string]: any }> extend
             }, {}
         );
         const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
-        return {oldValues: collectedOldValues, subscribersPromise};
+        return {removedValues: collectedOldValues as U.Merge<O.P.Pick<T, S.Split<P, ".">>>, subscribersPromise};
     }
 }

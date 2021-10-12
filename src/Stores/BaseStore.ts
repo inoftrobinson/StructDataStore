@@ -5,7 +5,7 @@ import SubscriptionsManager from "../SubscriptionsManager";
 
 export default abstract class BaseStore {
     public activeSubscribersIndex: number;
-    private readonly subscribers: { [index: number]: () => any };
+    public readonly subscribers: { [index: number]: () => any };
 
     protected constructor() {
         this.activeSubscribersIndex = 0;

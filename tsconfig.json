@@ -15,8 +15,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "types": [
-      "underscore",
-      "jest",
+      "jest"
     ],
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -29,7 +28,12 @@
     "noImplicitAny": false,
     "suppressImplicitAnyIndexErrors": true,
   },
-  "include": [],
+  "exclude": [
+    "tests",
+    "dist",
+    "node_modules",
+    "src/old"
+  ],
   "typeRoots": [
     "node_modules/@types"
   ],

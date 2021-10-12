@@ -40,13 +40,25 @@ export default abstract class BaseObjectStore<T extends { [attrKeyPath: string]:
         return this.subscriptionsManager.triggerAllSubscribers();
     }
 
-    abstract loadFromData(data: T): { item: immutable.RecordOf<T> | undefined, subscribersPromise: Promise<any> };
+    abstract loadFromData(data: T): { subscribersPromise: Promise<any> };
 
-    abstract loadFromJsonifiedData(jsonifiedRecordsData: any): { item: immutable.RecordOf<T> | undefined, subscribersPromise: Promise<any> } | null;
+    loadFromJsonifiedData(jsonifiedData: any): { subscribersPromise: Promise<any> } {
+        try {
+            const parsedData: any = JSON.parse(jsonifiedData);
+            if (_.isPlainObject(parsedData)) {
+                return this.loadFromData(parsedData);
+            } else {
+                console.warn(`Parsed data was not a plain object and could not be loaded`);
+            }
+        } catch (e) {
+            console.warn(`JSON Parsing error in loading the jsonified data : ${e}`);
+        }
+        return {subscribersPromise: new Promise<void>(resolve => resolve())};
+    }
 
-    abstract getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<O.Path<T, S.Split<P, '.'>>>;
+    abstract getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<O.Path<T, S.Split<P, '.'>> | undefined>;
 
-    abstract getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<U.Merge<O.P.Pick<T, S.Split<P, '.'>>>>;
+    abstract getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Optional<U.Merge<O.P.Pick<T, S.Split<P, '.'>>>>>;
 
     // todo: implement two function (one with returned subscribers promise and the other not) for all operations
     abstract updateAttrWithReturnedSubscribersPromise<P extends string>(
@@ -86,7 +98,7 @@ export default abstract class BaseObjectStore<T extends { [attrKeyPath: string]:
     async updateDataToMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
     ): Promise<ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined> {
-        return (await this.updateDataToMultipleAttrsWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValues;
+        return (await this.updateDataToMultipleAttrsWithReturnedSubscribersPromise<M>(mutators)).oldValues;
     }
 
     abstract deleteAttrWithReturnedSubscribersPromise<P extends string>(
