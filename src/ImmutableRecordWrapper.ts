@@ -17,12 +17,12 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
         return new ImmutableRecordWrapper<T>(record, itemModel);
     }
 
-    static fromData<T>(itemModel: MapModel, data: T) {
+    static fromData<T extends {}>(itemModel: MapModel, data: T) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel(data, itemModel) as immutable.RecordOf<T>;
         return new ImmutableRecordWrapper<T>(record, itemModel);
     }
 
-    static fromEmpty<T>(itemModel: MapModel) {
+    static fromEmpty<T extends {}>(itemModel: MapModel) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel({}, itemModel) as immutable.RecordOf<T>;
         return new ImmutableRecordWrapper<T>(record, itemModel);
     }
@@ -31,7 +31,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
         return new ImmutableRecordWrapper<T>();
     }*/
 
-    updateRecord(record:immutable.RecordOf<T> | null): void {
+    updateRecord(record: immutable.RecordOf<T>): void {
         this.RECORD_DATA = record;
     }
 
@@ -44,7 +44,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
         parentAttributeData: any, parentRecordData: immutable.RecordOf<T>
     ) {
         const firstKeyPathElement: string = keyPathElements[0];
-        const matchingFieldItem: MapModel | BaseFieldModel | TypedDictFieldModel | undefined = itemMapModel.props.fields[firstKeyPathElement];
+        const matchingFieldItem: MapModel | BasicFieldModel | TypedDictFieldModel | undefined = itemMapModel.props.fields[firstKeyPathElement];
         if (matchingFieldItem === undefined) {
             console.warn(`No field model found for ${firstKeyPathElement}`);
             return [false, null, undefined];
@@ -81,7 +81,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
 
         const attrKeyPathElementsToNavigateInto: string[] = attrKeyPathElements.slice(0, -1);
         for (let keyPathElement of attrKeyPathElementsToNavigateInto) {
-            const matchingFieldItem: MapModel | BaseFieldModel | TypedDictFieldModel | undefined = currentItemMapModel.props.fields[keyPathElement];
+            const matchingFieldItem: MapModel | BasicFieldModel | TypedDictFieldModel | undefined = currentItemMapModel.props.fields[keyPathElement];
             if (matchingFieldItem === undefined) {
                 console.warn(`No field model found for ${keyPathElement}`);
                 return [false, null, undefined];
@@ -137,7 +137,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
     }
 
     // updateMultipleAttrs<T extends { [attrKeyPath: string]: any }>(mutators: Partial<T>): IterableIterator<[keyof T, T[keyof T]]> {
-    updateMultipleAttrs(mutators: Partial<T>): { [attrKeyPath: string]: any | undefined } {
+    updateMultipleAttrs(mutators: { [attrKeyPath: string]: any }): { [attrKeyPath: string]: any | undefined } {
         const mutatorsKeys: string[] = Object.keys(mutators);
         if (!(mutatorsKeys.length > 0)) {
             return {};

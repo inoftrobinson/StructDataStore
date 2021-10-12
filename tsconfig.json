@@ -5,7 +5,10 @@
     "strictNullChecks": true,
 
     // this is the lowest supported standard library
-    "lib": ["es2015"],
+    "lib": [
+      "es2015",
+      "dom"
+    ],
     "declaration": false,
     "jsx": "react",
     "allowJs": true,

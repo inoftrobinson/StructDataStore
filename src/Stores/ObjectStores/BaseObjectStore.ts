@@ -12,7 +12,7 @@ import {
 export interface BaseObjectProps {
 }
 
-export default abstract class BaseObjectStore<T extends { [attrKeyPath: string]: any }> extends BaseStore {
+export default abstract class BaseObjectStore<T extends { [p: string]: any }> extends BaseStore {
     public readonly subscriptionsManager: SubscriptionsManager<T>;
 
     protected constructor(public readonly props: BaseObjectProps) {

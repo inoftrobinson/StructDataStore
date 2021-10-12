@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import {deepRemoveNulls, shallowDifference, shallowMissingOrNull} from "../utils/general";
-import {BaseFieldModel, MapModel, TypedDictFieldModel} from "../ModelsFields";
+import {BasicFieldModel, MapModel, TypedDictFieldModel} from "../ModelsFields";
 
 export interface FieldSetterModel {
     fieldKey: string;
@@ -24,9 +24,9 @@ export interface ClientFieldItem {
 export const ACTIVE_SELF_DICT: string = '__ACTIVE_SELF_DICT__';
 
 
-function fieldItemToClientFieldItem(item: BaseFieldModel | TypedDictFieldModel | MapModel): ClientFieldItem {
-    // It is important that the instance check on the BaseFieldModel is done last, because even tough BaseFieldModel can be used by itself to
-    // construct a field, the others models all inherit from BaseFieldModel, and so would trigger true to the instance check of BaseFieldModel.
+function fieldItemToClientFieldItem(item: BasicFieldModel | TypedDictFieldModel | MapModel): ClientFieldItem {
+    // It is important that the instance check on the BasicFieldModel is done last, because even tough BasicFieldModel can be used by itself to
+    // construct a field, the others models all inherit from BasicFieldModel, and so would trigger true to the instance check of BasicFieldModel.
     if (item instanceof MapModel) {
         const childrenClientFields: { [fieldKey: string]: ClientFieldItem } = _.mapValues(item.props.fields, fieldItemToClientFieldItem);
         return {children: childrenClientFields};
@@ -42,7 +42,7 @@ function fieldItemToClientFieldItem(item: BaseFieldModel | TypedDictFieldModel |
         return {isKeyRecursive: true, keyName: item.props.keyName, children: childrenClientFields, recursiveIndex: undefined};
         // Set recursiveIndex to undefined, and not to 0. Because each a recursive item will always use to recursiveIndex of its parent and
         // one to it to know what is its current recursive index. If it's undefined, the index will start at zero, which is what we want.
-    } else if (item instanceof BaseFieldModel) {
+    } else if (item instanceof BasicFieldModel) {
         return {};
     } else {
         console.error(`Item of type ${typeof item} not supported`);
@@ -67,7 +67,7 @@ function clientMakeSmartSettersRemoversForRecursiveDifferences(
     // no modified keys are present, since this means that the items has not been modified at all.
 
     _.forEach(missingOrNullKeys, (itemKey: string) => {
-        const matchingModelItem: MapModel | BaseFieldModel | TypedDictFieldModel | undefined = clientModel.children[itemKey];
+        const matchingModelItem: MapModel | BasicFieldModel | TypedDictFieldModel | undefined = clientModel.children[itemKey];
         if (matchingModelItem === undefined) {
             console.log(`No model item found for key ${itemKey}`);
         } else {

@@ -1,5 +1,5 @@
 import {BasicObjectStore} from "../src/Stores/ObjectStores/BasicObjectStore";
-import {BaseFieldModel, MapModel} from "../src/ModelsFields";
+import {BasicFieldModel, MapModel} from "../src/ModelsFields";
 
 interface StoreObjectModel {
     container1: {
@@ -13,7 +13,7 @@ describe('BasicObjectStore', () => {
             retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({})
                 }})
             }})}
         );

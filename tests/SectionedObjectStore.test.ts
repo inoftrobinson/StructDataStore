@@ -1,4 +1,4 @@
-import {BaseFieldModel, MapModel} from "../src/ModelsFields";
+import {BasicFieldModel, MapModel} from "../src/ModelsFields";
 import SectionedObjectStore from "../src/Stores/ObjectStores/SectionedObjectStore";
 
 
@@ -13,7 +13,7 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({})
                 }})
             }})}
         );
@@ -37,12 +37,12 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({})
                 }}),
                 'container2': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({})
                 }}),
             }})}
         );
@@ -70,7 +70,7 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({})
                 }})
             }})}
         );
@@ -98,12 +98,12 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({})
                 }}),
                 'container2': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({})
                 }}),
             }})}
         );
@@ -151,7 +151,7 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({})
                 }})
             }})}
         );
@@ -180,12 +180,12 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({})
                 }}),
                 'container2': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({})
                 }}),
             }})}
         );
@@ -218,7 +218,7 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({})
                 }})
             }})}
         );
@@ -249,12 +249,12 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({})
                 }}),
                 'container2': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({})
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({})
                 }}),
             }})}
         );
@@ -291,11 +291,11 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({}),
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({}),
                 }}),
                 'container2': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
+                    'field1': new BasicFieldModel({}),
                 }})
             }})}
         );
@@ -333,11 +333,11 @@ describe('SectionedObjectStore', () => {
             retrieveItemCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
-                    'field2': new BaseFieldModel({}),
+                    'field1': new BasicFieldModel({}),
+                    'field2': new BasicFieldModel({}),
                 }}),
                 'container2': new MapModel({fields: {
-                    'field1': new BaseFieldModel({}),
+                    'field1': new BasicFieldModel({}),
                 }})
             }})}
         );

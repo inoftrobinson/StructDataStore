@@ -48,7 +48,7 @@ export default class RecordDataWrapper<T> {
         parentAttributeData: any, parentRecordData: immutable.RecordOf<T>
     ) {
         const firstKeyPathElement: string = keyPathElements[0];
-        const matchingFieldItem: MapModel | BaseFieldModel | TypedDictFieldModel | undefined = itemMapModel.props.fields[firstKeyPathElement];
+        const matchingFieldItem: MapModel | BasicFieldModel | TypedDictFieldModel | undefined = itemMapModel.props.fields[firstKeyPathElement];
         if (matchingFieldItem === undefined) {
             console.warn(`No field model found for ${firstKeyPathElement}`);
             return [false, null, undefined];
@@ -85,7 +85,7 @@ export default class RecordDataWrapper<T> {
 
         const attrKeyPathElementsToNavigateInto: string[] = attrKeyPathElements.slice(0, -1);
         for (let keyPathElement of attrKeyPathElementsToNavigateInto) {
-            const matchingFieldItem: MapModel | BaseFieldModel | TypedDictFieldModel | undefined = currentItemMapModel.props.fields[keyPathElement];
+            const matchingFieldItem: MapModel | BasicFieldModel | TypedDictFieldModel | undefined = currentItemMapModel.props.fields[keyPathElement];
             if (matchingFieldItem === undefined) {
                 console.warn(`No field model found for ${keyPathElement}`);
                 return [false, null, undefined];
