@@ -9,13 +9,13 @@ import {
 } from "../../types";
 
 
-export interface BaseObjectProps {
+export interface BaseObjectStoreProps {
 }
 
 export default abstract class BaseObjectStore<T extends { [p: string]: any }> extends BaseStore {
     public readonly subscriptionsManager: SubscriptionsManager<T>;
 
-    protected constructor(public readonly props: BaseObjectProps) {
+    protected constructor(public readonly props: BaseObjectStoreProps) {
         super();
         this.subscriptionsManager = new SubscriptionsManager<T>(this);
     }

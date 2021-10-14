@@ -10,7 +10,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({})
@@ -34,7 +34,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({}),
@@ -67,7 +67,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({})
@@ -95,7 +95,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({}),
@@ -148,7 +148,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({})
@@ -177,7 +177,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({}),
@@ -215,7 +215,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({})
@@ -246,7 +246,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({}),
@@ -288,7 +288,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({}),
@@ -330,7 +330,7 @@ describe('BasicObjectStore', () => {
             }
         }
         const store = new BasicObjectStore<StoreModel>({
-            retrieveItemCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve(undefined),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({}),

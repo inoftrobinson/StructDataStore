@@ -8,7 +8,7 @@ import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcesso
 import {CreateUpdateRecordResponse} from "../../models";
 
 
-export interface BaseObjectProps {
+export interface BaseObjectStoreProps {
 
 }
 
@@ -19,7 +19,7 @@ export default abstract class BaseObjectStore<T extends { [attrKeyPath: string]:
     // private readonly keysSubscribers: { [recordKey: string]: { [index: number] : () => any } };
     private readonly subscribersIndexesToRecordKeys: { [subscriberIndex: number]: string };
 
-    protected constructor(public readonly props: BaseObjectProps) {
+    protected constructor(public readonly props: BaseObjectStoreProps) {
         super();
         this.RECORDS_SUBSCRIPTIONS_WRAPPERS = {};
         this.activeSubscribersIndex = 0;

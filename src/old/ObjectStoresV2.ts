@@ -3,13 +3,13 @@ import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import ContainerStore from "../ContainerStore";
 import RecordDataWrapper from "../../RecordDataWrapper";
-import BaseObjectStore, {BaseObjectProps} from "./BaseObjectStore";
+import BaseObjectStore, {BaseObjectStoreProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
 import RecordSubscriptionsWrapper from "../../RecordSubscriptionsWrapper";
 import BaseObjectStoreV2 from "./BaseObjectStore";
 
 
-export interface ObjectStoreProps extends BaseObjectProps {
+export interface ObjectStoreProps extends BaseObjectStoreProps {
     retrieveDataCallable: () => Promise<any>;
     onRetrievalFailure?: (responseData: any) => any;
 }
@@ -68,7 +68,7 @@ export class ChildObjectStore<T> extends BaseObjectStore<T> {
     public CACHED_RECORDS_DATA_WRAPPERS?: { [key: string]: RecordDataWrapper<T> };
     private parentField?: ContainerStore<any>;
 
-    constructor(public readonly props: BaseObjectProps) {
+    constructor(public readonly props: BaseObjectStoreProps) {
         super(props);
     }
 
@@ -109,13 +109,13 @@ export class ChildObjectStore<T> extends BaseObjectStore<T> {
 }
 
 
-export interface SectionedObjectFieldProps extends BaseObjectProps {
+export interface SectionedObjectFieldProps extends BaseObjectStoreProps {
     retrieveItemCallable: (key: string) => Promise<any>;
     retrieveMultipleItemsCallable?: (keys: string[]) => Promise<any>;
     onItemRetrievalFailure?: (responseData: any) => any;
 }
 
-export class SectionedObjectStore<T> extends BaseObjectStoreV2<T> {
+export class ItemsObjectStore<T> extends BaseObjectStoreV2<T> {
     public CACHED_RECORDS_DATA_WRAPPERS: { [key: string]: RecordDataWrapper<T> };
     private readonly pendingKeyItemsRetrievalPromises: { [key: string]: Promise<immutable.RecordOf<T> | null> };
 

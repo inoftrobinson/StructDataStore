@@ -1,6 +1,7 @@
 import * as _ from 'lodash';
 import * as immutable from "immutable";
 import {resolveResultOrCallbackResult} from "./utils/executors";
+import * as Immutable from "immutable";
 
 
 export interface PrimitiveRestrainedFieldModelProps {
@@ -11,9 +12,11 @@ export interface ComplexBasicFieldModelProps extends PrimitiveRestrainedFieldMod
     useEmptyAsDefault?: boolean;
 }
 
-export class BaseFieldModel<P extends PrimitiveRestrainedFieldModelProps> {
-    constructor(public readonly props: P) {
+export abstract class BaseFieldModel<P extends PrimitiveRestrainedFieldModelProps> {
+    protected constructor(public readonly props: P) {
     }
+
+    abstract dataLoader(fieldData: any): any;
 }
 
 export interface BasicFieldModelProps extends PrimitiveRestrainedFieldModelProps {
@@ -24,8 +27,78 @@ export class BasicFieldModel extends BaseFieldModel<BasicFieldModelProps> {
     constructor(props: BasicFieldModelProps) {
         super(props);
     }
+
+    dataLoader(fieldData: any): any {
+        return immutable.fromJS(fieldData);
+    }
 }
 
+export class SetFieldModel extends BasicFieldModel {
+    constructor(public readonly props: ComplexBasicFieldModelProps) {
+        super({...props, customDefaultValue: props.useEmptyAsDefault === true ? () => immutable.Set([]) : undefined});
+    }
+
+    dataLoader(fieldData: any): any {
+        const itemDataIsArrayLike: boolean = _.isArrayLike(fieldData);
+        return immutable.Set(itemDataIsArrayLike ? fieldData : []);
+    }
+}
+
+
+
+export abstract class ContainerFieldModel<T> extends BaseFieldModel<T & BasicFieldModelProps> {
+    protected constructor(props: any) {
+        super(props);
+    }
+
+    get type(): string {
+        const constructor = this.constructor as any;
+        return constructor['TYPE'];
+    }
+}
+
+export interface MapModelProps extends BasicFieldModelProps {
+    fields: { [fieldName: string]: BasicFieldModel | TypedDictFieldModel | MapModel };
+}
+
+export class MapModel extends ContainerFieldModel<MapModelProps> {
+    public static readonly TYPE = 'MapField';
+
+    constructor(public readonly props: MapModelProps) {
+        super({...props, customDefaultValue: props.required === true ? () => this.makeDefault() : undefined});
+    }
+
+    makeDefault() {
+        return immutable.Map(_.transform(this.props.fields, (result: { [key: string]: any }, fieldItem, fieldKey: string) => {
+            result[fieldKey] = resolveResultOrCallbackResult(fieldItem.props.customDefaultValue);
+        }, {}));
+    }
+
+    dataLoader(fieldData: any): any {
+        const recordValues = _.transform(this.props.fields,
+            (result: { [p: string]: any}, fieldItem: BaseFieldModel<any>, fieldKey: string) => {
+                const matchingItemData: any | undefined = fieldData[fieldKey];
+                if (matchingItemData == null) {
+                    if (fieldItem.props.required !== true) {
+                        result[fieldKey] = (fieldItem.props.customDefaultValue !== undefined ?
+                                resolveResultOrCallbackResult(fieldItem.props.customDefaultValue) : undefined
+                        );
+                    } else {
+                        console.log(`Missing ${fieldKey}. Breaks all`);
+                    }
+                } else {
+                    result[fieldKey] = matchingItemData;
+                }
+            }
+        );
+        const recordDefaultValues = _.mapValues(recordValues, () => undefined);
+        // We set the defaultValues to a map of undefined values for all the keys in our recordValues. This is crucial, as this allows
+        //the deletion and removal of fields. Otherwise, the default values would be restored when the fields are deleted/removed.
+        const recordFactory: immutable.Record.Factory<any> = immutable.Record<any>(recordDefaultValues);
+        // The default values are used to created a record factory.
+        return recordFactory(recordValues as Partial<any>);
+    }
+}
 
 export interface TypedDictProps extends ComplexBasicFieldModelProps {
     keyType: string;
@@ -33,32 +106,17 @@ export interface TypedDictProps extends ComplexBasicFieldModelProps {
     itemType: MapModel | "__ACTIVE_SELF_DICT__";
 }
 
-export class TypedDictFieldModel extends BaseFieldModel<TypedDictProps & BasicFieldModelProps> {
-    constructor(props: TypedDictProps) {
+export class TypedDictFieldModel extends ContainerFieldModel<TypedDictProps> {
+    public static readonly TYPE = 'TypedDictField';
+
+    constructor(props: TypedDictProps & BasicFieldModelProps) {
         super({...props, customDefaultValue: props.useEmptyAsDefault === true ? () => immutable.Map() : undefined});
     }
-}
 
-
-export interface MapModelProps extends BasicFieldModelProps {
-    fields: { [fieldName: string]: BasicFieldModel | TypedDictFieldModel | MapModel };
-}
-
-export class MapModel {
-    constructor(public readonly props: MapModelProps) {
-    }
-
-    /*makeDefault() {
-        // todo: remove this function ?
-        return _.transform(this.props.fields, (result: { [key: string]: any }, fieldItem, fieldKey: string) => {
-            result[fieldKey] = resolveResultOrCallbackResult(fieldItem.props.customDefaultValue);
-        }, {});
-    }*/
-}
-
-
-export class SetFieldModel extends BasicFieldModel {
-    constructor(public readonly props: ComplexBasicFieldModelProps) {
-        super({...props, customDefaultValue: props.useEmptyAsDefault === true ? () => immutable.Set([]) : undefined});
+    dataLoader(fieldData: any): Immutable.Map<string, any> {
+        const itemTypeCallable = this.props.itemType === '__ACTIVE_SELF_DICT__' ? this : this.props.itemType;
+        return immutable.Map(_.transform(fieldData, (result: { [p: string]: any }, dictItem: any, dictKey: string) => {
+            result[dictKey] = itemTypeCallable.dataLoader(dictItem);
+        }, {}));
     }
 }

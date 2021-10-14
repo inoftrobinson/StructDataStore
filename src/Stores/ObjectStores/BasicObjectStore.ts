@@ -1,21 +1,23 @@
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {F, O, S, U} from 'ts-toolbelt';
-import {BaseObjectProps} from "./BaseObjectStore";
+import {BaseObjectStoreProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
 import BaseObjectStore from "./BaseObjectStore";
-import {MapModel} from "../../ModelsFields";
+import {MapModel, TypedDictFieldModel} from "../../ModelsFields";
 import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
 import {ObjectFlattenedRecursiveMutatorsResults, ObjectOptionalFlattenedRecursiveMutators} from "../../types";
 
 
-export interface BasicObjectStoreProps extends BaseObjectProps {
-    objectModel: MapModel;
+export interface BasicObjectStoreProps extends BaseObjectStoreProps {
+    objectModel: MapModel | TypedDictFieldModel;
     retrieveDataCallable: () => Promise<any>;
     onRetrievalFailure?: (responseData: any) => any;
 }
 
-export default class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T> {
+// todo: fix typing bug and remove the ts-ignore
+export default // @ts-ignore
+class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T> {
     public RECORD_WRAPPER?: ImmutableRecordWrapper<T>;
     private pendingRetrievalPromise?: Promise<ImmutableRecordWrapper<T> | null>;
 

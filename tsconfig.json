@@ -1,35 +1,11 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-      // highly recommended (required by few utilities)
-    "strictNullChecks": true,
-
-    // this is the lowest supported standard library
-    "lib": [
-      "es2015",
-      "dom"
-    ],
-    "declaration": false,
-    "jsx": "react",
-    "allowJs": true,
-    "module": "esnext",
-    "target": "es6",
-    "moduleResolution": "node",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "types": [
-      "jest"
-    ],
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "noImplicitAny": false,
-    "suppressImplicitAnyIndexErrors": true,
+      "target": "es6",
+      "module": "commonjs",
+      "strict": true,
+      "declaration": true,
+      "outDir": "./dist"
   },
   "exclude": [
     "tests",
@@ -39,5 +15,5 @@
   ],
   "typeRoots": [
     "node_modules/@types"
-  ],
+  ]
 }

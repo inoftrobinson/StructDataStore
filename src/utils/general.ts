@@ -38,10 +38,12 @@ export function deepMissing(object: { [key: string]: any }, base: { [key: string
     return changes(object, base);
 }
 
-export function deepRemoveNulls(item: { [key: string]: any } | any[]): { [key: string]: any } | any[] {
-    return _.transform(item, (result: {} | [], value: any, key: string | number) => {
+export function deepRemoveNulls(item: { [key: string]: any }): { [key: string]: any } | any[] {
+    return _.transform(item, (result: {[p: string]: any}, value: any, key: string | number) => {
         if (value != null) {
-            result[key] = (_.isObject(value) && _.isObject(value[key])) ? deepRemoveNulls(value[key]) : value;
+            result[key] = ((_.isObject(value) && _.isObject((value as { [p: string]: any })[key])) ?
+                    deepRemoveNulls(((value as { [p: string]: any })[key] as { [p: string]: any })) : value
+            );
         }
     });
 }
