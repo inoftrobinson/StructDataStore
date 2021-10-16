@@ -10,7 +10,7 @@ import {ObjectFlattenedRecursiveMutatorsResults, ObjectOptionalFlattenedRecursiv
 
 
 export interface BasicObjectStoreProps extends BaseObjectStoreProps {
-    objectModel: MapModel | TypedDictFieldModel;
+    objectModel: MapModel;
     retrieveDataCallable: () => Promise<any>;
     onRetrievalFailure?: (responseData: any) => any;
 }
@@ -94,7 +94,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
 
     async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
-    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined; subscribersPromise: Promise<any> }> {
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined, subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const oldValues: { [attrKeyPath: string]: any } = recordWrapper.updateMultipleAttrs(mutators);

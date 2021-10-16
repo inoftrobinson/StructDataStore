@@ -1,10 +1,10 @@
 {
   "name": "struct-data-store",
-  "version": "2.0.1",
+  "version": "2.1.1",
   "description": "Modern structured DataStore with type inferring, automatic data validation, data immutability, managed data retrieval\nand granular listeners for TypeScript.",
   "author": "Inoft",
   "license": "MIT",
-  "main": "text.js",
+  "main": "src/main.ts",
   "dependencies": {
     "immutable": "^4.0.0",
     "lodash": "^4.17.21",
@@ -52,8 +52,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "jest",
-    "test-2": "cross-env NODE_ENV=test jest --config ./scripts/jest/config.json"
+    "test": "jest"
   },
   "typings": "custom.d.ts"
 }

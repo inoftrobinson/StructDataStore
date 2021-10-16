@@ -72,7 +72,9 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
         return undefined;
     }
 
-    private makeAttrsRelativeKeyPathsByItemsKeys<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): { [itemKey: string]: F.AutoPath<T, P>[] } {
+    private makeAttrsRelativeKeyPathsByItemsKeys<P extends string>(
+        attrsKeyPaths: F.AutoPath<{ [recordKey: string]: T }, P>[]
+    ): { [itemKey: string]: F.AutoPath<T, P>[] } {
         return _.transform(attrsKeyPaths,
             (output: { [p: string]: F.AutoPath<T, P>[] }, attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>) => {
                 const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);
@@ -90,12 +92,13 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
         );
     }
 
-    private makeAttrsRelativeMutatorsByItemsKeys<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+    private makeAttrsRelativeMutatorsByItemsKeys<M extends ObjectOptionalFlattenedRecursiveMutators<{ [recordKey: string]: T }>>(
         mutators: M
     ): { [itemKey: string]: { [relativeAttrKeyPath: string]: any } } {
-        return _.transform(mutators,
-            (output: { [itemKey: string]: { [relativeAttrKeyPath: string]: any } }, mutatorValue: any, mutatorAttrKeyPath: string) => {
-                const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(mutatorAttrKeyPath as F.AutoPath<T, any>);
+        return _.transform(mutators, (
+            output: { [itemKey: string]: { [relativeAttrKeyPath: string]: any } },
+            mutatorValue: any, mutatorAttrKeyPath: F.AutoPath<{ [recordKey: string]: T }, any>) => {
+                const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(mutatorAttrKeyPath);
                 if (relativeAttrKeyPath != null) {
                     const existingContainer: { [relativeAttrKeyPath: string]: any } | undefined = output[itemKey];
                     if (existingContainer !== undefined) {
@@ -152,8 +155,8 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
 
     async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<{ [recordKey: string]: T }>>(
         mutators: M
-    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<{ [recordKey: string]: T }, M> | undefined; subscribersPromise: Promise<any> }> {
-        const attrsRelativeMutatorsByItemsKeys: { [itemKey: string]: { [relativeAttrKeyPath: F.AutoPath<T, S.Split<P, '.'>>]: any } } = (
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<{ [recordKey: string]: T }, M> | undefined, subscribersPromise: Promise<any> }> {
+        const attrsRelativeMutatorsByItemsKeys: { [itemKey: string]: { [relativeAttrKeyPath: string]: any } } = (
             this.makeAttrsRelativeMutatorsByItemsKeys<M>(mutators)
         );
         const dataWrappers: { [itemKey: string]: ImmutableRecordWrapper<T> | null } = await (
@@ -171,8 +174,8 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
                 }
             }, {}
         );
-        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(Object.keys(mutators));
-        return {oldValues: collectedOldValues as ObjectFlattenedRecursiveMutatorsResults<{ [recordKey: string]: T }, M>, subscribersPromise};
+        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(Object.keys(mutators as { [attrKeyPath: string]: any }));
+        return {oldValues: collectedOldValues as any, subscribersPromise};
     }
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
@@ -184,7 +187,7 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
 
     async updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<{ [recordKey: string]: T }>>(
         mutators: M
-    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<{ [recordKey: string]: T }, M> | undefined; subscribersPromise: Promise<any> }> {
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<{ [recordKey: string]: T }, M> | undefined, subscribersPromise: Promise<any> }> {
         // todo: implement
         return {oldValues: undefined, subscribersPromise: Promise.resolve(undefined)};
     }

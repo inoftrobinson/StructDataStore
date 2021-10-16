@@ -3,7 +3,12 @@ import {U, L, O, S, A} from "ts-toolbelt";
 
 // @ts-ignore
 export type ObjectFlattenedRecursiveKeys<A extends { [p: string]: any }> = S.Join<L.Required<O.Paths<A>>, '.'>;
-export type ObjectOptionalFlattenedRecursiveMutators<A> = O.Optional<{ [K in ObjectFlattenedRecursiveKeys<A>]: O.Path<A, S.Split<K, '.'>> }>;
+// @ts-ignore
+export type ObjectOptionalFlattenedRecursiveMutators<A extends { [p: string]: any }> = (
+    // @ts-ignore
+    O.Optional<{ [K in ObjectFlattenedRecursiveKeys<A>]: O.Path<A, S.Split<K, '.'>> }>
+);
+// @ts-ignore
 export type ObjectFlattenedRecursiveMutatorsResults<A, M extends ObjectOptionalFlattenedRecursiveMutators<A>> = (
     // @ts-ignore
     U.Merge<{ [K in A.Keys<M>]: O.Path<A, S.Split<K, '.'>> }>

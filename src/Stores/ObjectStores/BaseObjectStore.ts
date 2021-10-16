@@ -1,4 +1,4 @@
-import {F, O, S, U, L} from 'ts-toolbelt';
+import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import BaseStore from "../BaseStore";
@@ -73,11 +73,13 @@ export default abstract class BaseObjectStore<T extends { [p: string]: any }> ex
 
     abstract updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
-    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined, subscribersPromise: Promise<any> }>;
+    ): Promise<{ oldValues: any | undefined, subscribersPromise: Promise<any> }>;
+    // ObjectFlattenedRecursiveMutatorsResults<any, any>
 
     async updateMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
-    ): Promise<ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined> {
+    ): Promise<any | undefined> {
+        // ObjectFlattenedRecursiveMutatorsResults<any, any>
         return (await this.updateMultipleAttrsWithReturnedSubscribersPromise(mutators)).oldValues;
     }
 
@@ -91,13 +93,13 @@ export default abstract class BaseObjectStore<T extends { [p: string]: any }> ex
         return (await this.updateDataToAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 
-    abstract updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+    abstract updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<any>>(
         mutators: M
-    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined, subscribersPromise: Promise<any> }>;
+    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<any, any> | undefined, subscribersPromise: Promise<any> }>;
 
     async updateDataToMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
-    ): Promise<ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined> {
+    ): Promise<any> {  // ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined
         return (await this.updateDataToMultipleAttrsWithReturnedSubscribersPromise<M>(mutators)).oldValues;
     }
 

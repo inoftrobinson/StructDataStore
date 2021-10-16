@@ -6,6 +6,7 @@ import {resolveResultOrCallbackResult} from "./utils/executors";
 
 type FieldModel = BasicFieldModel | MapModel | TypedDictFieldModel | SetFieldModel;
 
+/*
 function rar(fields: { [fieldKey: string]: FieldModel }, data: { [attrKeyPath: string]: any }) {
     const recordValues = _.transform(fields, (result: { [p: string]: any}, fieldItem: FieldModel, fieldKey: string) => {
         const matchingItemData: any | undefined = data[fieldKey];
@@ -37,6 +38,7 @@ function rar(fields: { [fieldKey: string]: FieldModel }, data: { [attrKeyPath: s
     });
     return recordValues;
 }
+ */
 
 /*export function loadObjectDataToImmutableValuesWithFieldsModel<T extends {}>(
     objectData: { [attrKey: string]: any }, containerModel: ContainerFieldModel<any>
