@@ -11,7 +11,7 @@ import {
     simpleRemoveMultipleAttrs,
     simpleUpdateAttr,
     simpleUpdateMultipleAttrs
-} from "./BaseItemsObjectStore.test";
+} from "./BaseItemsObjectStoreTests";
 
 
 function storeFactory<T>(itemModel: MapModel) {
