@@ -9,7 +9,7 @@ import {
     simpleGetMultipleAttrs,
     simpleRemoveAttr,
     simpleRemoveMultipleAttrs,
-    simpleUpdateAttr,
+    simpleUpdateAttr, simpleUpdateDataToAttr,
     simpleUpdateMultipleAttrs
 } from "./BaseItemsObjectStoreTests";
 
@@ -42,4 +42,6 @@ describe('SectionedItemsObjectStore', () => {
     test('listeners sharing', () => listenersSharing(storeFactory));
 
     test('listeners separation', () => listenersSeparation(storeFactory));
+
+    test('simple updateDataToAttr', () => simpleUpdateDataToAttr(storeFactory));
 });

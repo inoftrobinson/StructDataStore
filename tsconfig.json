@@ -1,19 +1,30 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-      "target": "es6",
-      "module": "commonjs",
+    "baseUrl": "./src",
+    "rootDir": "./src",
+    "outDir": "./lib",
+    "target": "es6",
+    "module": "commonjs",
+    "declaration": true,
+    "allowJs": true,
+      "skipLibCheck": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
       "strict": true,
-      "declaration": true,
-      "outDir": "./dist"
+      "forceConsistentCasingInFileNames": true,
+      "moduleResolution": "node",
+      "resolveJsonModule": true,
+      "isolatedModules": true
   },
-  "exclude": [
-    "tests",
-    "dist",
-    "node_modules",
-    "src/old"
+  "include": [
+    "./src",
+    "./src/"
   ],
-  "typeRoots": [
-    "node_modules/@types"
+  "exclude": [
+    "./tests",
+    "./lib",
+    "./node_modules",
+    "./src/old"
   ]
 }

@@ -4,7 +4,7 @@ import ImmutableRecordWrapper from "../../../ImmutableRecordWrapper";
 import BaseItemsObjectStore, {BaseItemsObjectStoreProps} from "./BaseItemsObjectStore";
 
 
-export interface ItemsObjectFieldProps extends BaseItemsObjectStoreProps {
+export interface BasicItemsObjectStoreProps extends BaseItemsObjectStoreProps {
     retrieveAllItemsCallable: () => Promise<any>;
     onRetrievalFailure?: (responseData: any) => any;
 }
@@ -13,7 +13,7 @@ export default class BasicItemsObjectStore<T extends { [p: string]: any }> exten
     public RECORD_WRAPPERS?: { [recordKey: string]: ImmutableRecordWrapper<T> | null } | undefined;
     private pendingRecordItemsRetrievalPromise?: Promise<any> | undefined;
 
-    constructor(public readonly props: ItemsObjectFieldProps) {
+    constructor(public readonly props: BasicItemsObjectStoreProps) {
         super(props);
         this.RECORD_WRAPPERS = undefined;
         this.pendingRecordItemsRetrievalPromise = undefined;

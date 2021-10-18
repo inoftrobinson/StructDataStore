@@ -1,13 +1,14 @@
 import {BasicFieldModel, MapModel} from "../../src/ModelsFields";
 import BasicItemsObjectStore from "../../src/Stores/ObjectStores/ItemsObjectStores/BasicItemsObjectStore";
 import SectionedItemsObjectStore from "../../src/Stores/ObjectStores/ItemsObjectStores/SectionedItemsObjectStore";
+import * as Immutable from "immutable";
 
 
 // export default (storeClass: typeof BasicItemsObjectStore | typeof SectionedItemsObjectStore) => {
 //     describe('BaseItemsObjectStore', () => {
-export type storeFactory = <T>(itemModel: MapModel) => BasicItemsObjectStore<T> | SectionedItemsObjectStore<T>;
+export type StoreFactory = <T>(itemModel: MapModel) => BasicItemsObjectStore<T> | SectionedItemsObjectStore<T>;
 
-export async function simpleGetAttr(storeFactory: storeFactory) {
+export async function simpleGetAttr(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: number;
@@ -25,7 +26,7 @@ export async function simpleGetAttr(storeFactory: storeFactory) {
     expect(retrievedField1Value).toEqual(42);
 }
 
-export async function simpleGetMultipleAttrs(storeFactory: storeFactory) {
+export async function simpleGetMultipleAttrs(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: string;
@@ -64,7 +65,7 @@ export async function simpleGetMultipleAttrs(storeFactory: storeFactory) {
     });
 }
 
-export async function simpleUpdateAttr(storeFactory: storeFactory) {
+export async function simpleUpdateAttr(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: string;
@@ -86,7 +87,7 @@ export async function simpleUpdateAttr(storeFactory: storeFactory) {
     expect(retrievedNewValue).toEqual("c1.f1.alteration2");
 }
 
-export async function simpleUpdateMultipleAttrs(storeFactory: storeFactory) {
+export async function simpleUpdateMultipleAttrs(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: string;
@@ -137,7 +138,7 @@ export async function simpleUpdateMultipleAttrs(storeFactory: storeFactory) {
     });
 }
 
-export async function simpleDeleteAttr(storeFactory: storeFactory) {
+export async function simpleDeleteAttr(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: string;
@@ -160,7 +161,7 @@ export async function simpleDeleteAttr(storeFactory: storeFactory) {
     expect(retrievedValueAfterDeletion).toEqual(undefined);
 }
 
-export async function simpleDeleteMultipleAttrs(storeFactory: storeFactory) {
+export async function simpleDeleteMultipleAttrs(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: string;
@@ -204,7 +205,7 @@ export async function simpleDeleteMultipleAttrs(storeFactory: storeFactory) {
     });
 }
 
-export async function simpleRemoveAttr(storeFactory: storeFactory) {
+export async function simpleRemoveAttr(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: string;
@@ -229,7 +230,7 @@ export async function simpleRemoveAttr(storeFactory: storeFactory) {
     expect(retrievedValueAfterRemoval).toEqual(undefined);
 }
 
-export async function simpleRemoveMultipleAttrs(storeFactory: storeFactory) {
+export async function simpleRemoveMultipleAttrs(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: string;
@@ -273,7 +274,7 @@ export async function simpleRemoveMultipleAttrs(storeFactory: storeFactory) {
     });
 }
 
-export async function listenersSharing(storeFactory: storeFactory) {
+export async function listenersSharing(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: string;
@@ -316,7 +317,7 @@ export async function listenersSharing(storeFactory: storeFactory) {
     expect(listenersTriggersCounter).toEqual(1);
 }
 
-export async function listenersSeparation(storeFactory: storeFactory) {
+export async function listenersSeparation(storeFactory: StoreFactory) {
     interface StoreItemModel {
         container1: {
             field1: string;
@@ -360,4 +361,33 @@ export async function listenersSeparation(storeFactory: storeFactory) {
         'record1.container2.field1': "c2.f1.alteration2",
     });
     expect(listenersTriggersCounter).toEqual(3);
+}
+
+export async function simpleUpdateDataToAttr(storeFactory: StoreFactory) {
+    interface StoreItemModel {
+        value: string;
+        container: {
+            field1: string;
+        },
+    }
+    const store = storeFactory<StoreItemModel>(
+        new MapModel({fields: {
+            'value': new BasicFieldModel({}),
+            'container': new MapModel({fields: {
+                'field1': new BasicFieldModel({}),
+            }}),
+        }})
+    );
+
+    await store.updateDataToAttr('record1', {
+        'value': "v",
+        'container': {
+            'field1': "c1.f1"
+        }
+    });
+    const retrievedRecord = await store.getAttr('record1');
+    expect(retrievedRecord).toEqual({
+        'value': "v",
+        'container': Immutable.Record()
+    });
 }

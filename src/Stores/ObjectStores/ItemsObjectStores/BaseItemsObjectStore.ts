@@ -6,6 +6,7 @@ import BaseObjectStore, {BaseObjectStoreProps} from "../BaseObjectStore";
 import {MapModel, TypedDictFieldModel} from "../../../ModelsFields";
 import ImmutableRecordWrapper from "../../../ImmutableRecordWrapper";
 import {ObjectFlattenedRecursiveMutatorsResults, ObjectOptionalFlattenedRecursiveMutators} from "../../../types";
+import {navigateToAttrKeyPathIntoMapModel} from "../../../utils/fieldsNavigation";
 
 
 export interface BaseItemsObjectStoreProps extends BaseObjectStoreProps {
@@ -65,11 +66,14 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
             if (relativeAttrKeyPath != null) {
                 return dataWrapper.getAttr(relativeAttrKeyPath);
             } else {
-                // todo: update entire attr wrapper, maybe add a case of updateAttr in the
-                //  dataWrapper, where if an empty string is passed, the root object is updated ?
+                return dataWrapper.RECORD_DATA as any;
             }
         }
         return undefined;
+    }
+
+    async getRecordItem(recordKey: string): Promise<immutable.RecordOf<T> | undefined> {
+        return await this.getAttr(recordKey) as immutable.RecordOf<T>;
     }
 
     private makeAttrsRelativeKeyPathsByItemsKeys<P extends string>(
@@ -153,6 +157,12 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
         return {oldValue: undefined, subscribersPromise: new Promise(resolve => resolve(undefined))};
     }
 
+    async updateCachedRecordAttr<P extends string>(
+        recordKey: string, attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
+    ): Promise<O.Path<T, S.Split<P, '.'>> | undefined> {
+        return await this.updateAttr(`${recordKey}.${attrKeyPath}` as any, value as any);
+    }
+
     async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<{ [recordKey: string]: T }>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<{ [recordKey: string]: T }, M> | undefined, subscribersPromise: Promise<any> }> {
@@ -181,7 +191,12 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, value: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>
     ): Promise<{ oldValue: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
-        // todo: implement
+        const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);
+        const matchingField = navigateToAttrKeyPathIntoMapModel(this.props.itemModel, relativeAttrKeyPath as string);
+        if (matchingField != null) {
+            const loadedValue = matchingField.dataLoader(value);
+            return await this.updateAttrWithReturnedSubscribersPromise(attrKeyPath, loadedValue);
+        }
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
 
