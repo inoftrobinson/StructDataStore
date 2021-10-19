@@ -5,7 +5,11 @@ import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../../DataProce
 import BaseObjectStore, {BaseObjectStoreProps} from "../BaseObjectStore";
 import {BasicFieldModel, MapModel, TypedDictFieldModel} from "../../../ModelsFields";
 import ImmutableRecordWrapper from "../../../ImmutableRecordWrapper";
-import {ObjectFlattenedRecursiveMutatorsResults, ObjectOptionalFlattenedRecursiveMutators} from "../../../types";
+import {
+    FullImmutableCast,
+    ObjectFlattenedRecursiveMutatorsResults,
+    ObjectOptionalFlattenedRecursiveMutators
+} from "../../../types";
 import {navigateToAttrKeyPathIntoMapModel} from "../../../utils/fieldsNavigation";
 
 
@@ -60,7 +64,7 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
 
     async getAttr<P extends string>(
         attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>
-    ): Promise<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>> | undefined> {
+    ): Promise<FullImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined> {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
         if (dataWrapper != null) {
             if (relativeAttrKeyPath != null) {

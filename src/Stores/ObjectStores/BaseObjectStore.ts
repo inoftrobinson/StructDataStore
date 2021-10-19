@@ -4,6 +4,7 @@ import * as immutable from 'immutable';
 import BaseStore from "../BaseStore";
 import SubscriptionsManager from "../../SubscriptionsManager";
 import {
+    FullImmutableCast,
     ObjectFlattenedRecursiveMutatorsResults,
     ObjectOptionalFlattenedRecursiveMutators,
 } from "../../types";
@@ -56,7 +57,7 @@ export default abstract class BaseObjectStore<T extends { [p: string]: any }> ex
         return {subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    abstract getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<O.Path<T, S.Split<P, '.'>> | undefined>;
+    abstract getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<FullImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined>;
 
     abstract getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Optional<U.Merge<O.P.Pick<T, S.Split<P, '.'>>>>>;
 
