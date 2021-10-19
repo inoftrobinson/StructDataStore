@@ -1,6 +1,6 @@
 import {A, F, O, S, U, L} from 'ts-toolbelt';
 import * as immutable from 'immutable';
-import {CastListToImmutable, FullImmutableCast} from "../src/types";
+import {CastListToImmutable, ImmutableCast} from "../src/types";
 
 interface StoreModel {
     value1: string;
@@ -22,7 +22,7 @@ interface StoreModel {
 type objectToRecord<T extends { [attrKey: string]: any }> = U.Merge<{ [K in A.Keys<T>]: A.Extends<T[K], object> extends true ? immutable.RecordOf<A.Cast<T[K], object>> : T[K]}>;
 
 
-type RecordStoreModel = FullImmutableCast<StoreModel>;
+type RecordStoreModel = ImmutableCast<StoreModel>;
 const recordStoreModel: RecordStoreModel = null as any;
 const rar2 = recordStoreModel.list.get(0);
 
