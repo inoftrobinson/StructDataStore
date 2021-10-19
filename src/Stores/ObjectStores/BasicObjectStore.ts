@@ -1,10 +1,9 @@
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {F, O, S, U} from 'ts-toolbelt';
-import {BaseObjectStoreProps} from "./BaseObjectStore";
+import {BaseObjectStore, BaseObjectStoreProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
-import BaseObjectStore from "./BaseObjectStore";
-import {MapModel, TypedDictFieldModel} from "../../ModelsFields";
+import {MapModel} from "../../ModelsFields";
 import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
 import {
     ImmutableCast,
@@ -20,7 +19,7 @@ export interface BasicObjectStoreProps extends BaseObjectStoreProps {
 }
 
 // todo: fix typing bug and remove the ts-ignore
-export default // @ts-ignore
+export // @ts-ignore
 class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T> {
     public RECORD_WRAPPER?: ImmutableRecordWrapper<T>;
     private pendingRetrievalPromise?: Promise<ImmutableRecordWrapper<T> | null>;

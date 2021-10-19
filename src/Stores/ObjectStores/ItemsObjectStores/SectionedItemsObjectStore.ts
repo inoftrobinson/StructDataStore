@@ -1,8 +1,7 @@
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import ImmutableRecordWrapper from "../../../ImmutableRecordWrapper";
-import BaseItemsObjectStore, {BaseItemsObjectStoreProps} from "./BaseItemsObjectStore";
-import {RetrieveAllItemsCallablePromiseResult} from "./BasicItemsObjectStore";
+import {BaseItemsObjectStore, BaseItemsObjectStoreProps} from "./BaseItemsObjectStore";
 
 
 export type RetrieveSingleItemCallablePromiseResult<T> = {
@@ -21,7 +20,7 @@ export interface SectionedItemsObjectStoreProps<T> extends BaseItemsObjectStoreP
     onItemRetrievalFailure?: (metadata?: { [metadataKey: string]: any }) => any;
 }
 
-export default class SectionedItemsObjectStore<T extends { [p: string]: any }> extends BaseItemsObjectStore<T> {
+export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends BaseItemsObjectStore<T> {
     public RECORD_WRAPPERS: { [key: string]: ImmutableRecordWrapper<T> };
     private readonly pendingKeyItemsRetrievalPromises: { [key: string]: Promise<ImmutableRecordWrapper<T> | null> };
 

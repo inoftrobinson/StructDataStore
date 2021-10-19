@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import BaseStore from "./BaseStore";
+import {BaseStore} from "./BaseStore";
 
 
 interface BaseFieldProps {

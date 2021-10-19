@@ -3,7 +3,6 @@ import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "./DataProcessors";
 import {MapModel} from "./ModelsFields";
-import BaseObjectStore from "./Stores/ObjectStores/BaseObjectStore";
 
 
 export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {

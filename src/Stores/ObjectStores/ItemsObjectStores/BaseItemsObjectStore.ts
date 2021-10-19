@@ -2,7 +2,7 @@ import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../../DataProcessors";
-import BaseObjectStore, {BaseObjectStoreProps} from "../BaseObjectStore";
+import {BaseObjectStore, BaseObjectStoreProps} from "../BaseObjectStore";
 import {BasicFieldModel, MapModel, TypedDictFieldModel} from "../../../ModelsFields";
 import ImmutableRecordWrapper from "../../../ImmutableRecordWrapper";
 import {
@@ -17,7 +17,7 @@ export interface BaseItemsObjectStoreProps extends BaseObjectStoreProps {
     itemModel: MapModel;
 }
 
-export default abstract class BaseItemsObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<{ [recordKey: string]: T }> {
+export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<{ [recordKey: string]: T }> {
     protected constructor(public readonly props: BaseItemsObjectStoreProps) {
         super(props);
     }
@@ -170,7 +170,7 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
                 return {oldValue, subscribersPromise};
             }
         } else {
-            return await this.updateItemWithSubscribersPromise(itemKey, value);
+            return await this.updateItemWithSubscribersPromise(itemKey, value as immutable.RecordOf<T>);
             /*const oldValue: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>> | undefined = dataWrapper.updateRecord(value as any);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
             return {oldValue, subscribersPromise};*/
@@ -181,7 +181,7 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
     async updateCachedRecordAttr<P extends string>(
         recordKey: string, attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
     ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
-        return await this.updateAttr(`${recordKey}.${attrKeyPath}` as any, value as any);
+        return await this.updateAttr<P>(`${recordKey}.${attrKeyPath}` as any, value as any);
     }
 
     async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<{ [recordKey: string]: T }>>(
@@ -217,8 +217,8 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
             navigateToAttrKeyPathIntoMapModel(this.props.itemModel, relativeAttrKeyPath as string)
         );
         if (matchingField != null) {
-            const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }>> = matchingField.dataLoader(value);
-            return await this.updateAttrWithReturnedSubscribersPromise(attrKeyPath, loadedValue);
+            const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(value);
+            return await this.updateAttrWithReturnedSubscribersPromise<P>(attrKeyPath, loadedValue);
         }
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }

@@ -1,7 +1,7 @@
 import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
-import BaseStore from "../BaseStore";
+import {BaseStore} from "../BaseStore";
 import SubscriptionsManager from "../../SubscriptionsManager";
 import {
     ImmutableCast,
@@ -13,7 +13,7 @@ import {
 export interface BaseObjectStoreProps {
 }
 
-export default abstract class BaseObjectStore<T extends { [p: string]: any }> extends BaseStore {
+export abstract class BaseObjectStore<T extends { [p: string]: any }> extends BaseStore {
     public readonly subscriptionsManager: SubscriptionsManager<T>;
 
     protected constructor(public readonly props: BaseObjectStoreProps) {
@@ -124,7 +124,7 @@ export default abstract class BaseObjectStore<T extends { [p: string]: any }> ex
         attrKeyPath: F.AutoPath<T, P>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
 
-    async removeAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<O.Path<T, S.Split<P, '.'>> | undefined> {
+    async removeAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
         return (await this.removeAttrWithReturnedSubscribersPromise<P>(attrKeyPath)).oldValue;
     }
 

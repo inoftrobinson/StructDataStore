@@ -1,3 +1,4 @@
+export * from './ModelsFields';
 export * from './Stores/BaseStore';
 export * from './Stores/ValueStore';
 export * from './Stores/ObjectStores/BaseObjectStore';

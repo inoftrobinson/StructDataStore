@@ -1,7 +1,6 @@
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
-import {MapModel} from "../../ModelsFields";
-import BaseStore from "../BaseStore";
+import {BaseStore} from "../BaseStore";
 import RecordSubscriptionsWrapper from "../../RecordSubscriptionsWrapper";
 import RecordDataWrapper from "../../RecordDataWrapper";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";

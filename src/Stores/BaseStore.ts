@@ -3,7 +3,7 @@ import {asyncTriggerSubscribers} from "../utils/async";
 import SubscriptionsManager from "../SubscriptionsManager";
 
 
-export default abstract class BaseStore {
+export abstract class BaseStore {
     public activeSubscribersIndex: number;
     public readonly subscribers: { [index: number]: () => any };
 
