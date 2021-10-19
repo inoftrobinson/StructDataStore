@@ -31,8 +31,10 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
         return new ImmutableRecordWrapper<T>();
     }*/
 
-    updateRecord(record: immutable.RecordOf<T>): void {
+    updateRecord(record: immutable.RecordOf<T>): immutable.RecordOf<T> {
+        const oldRecordData = this.RECORD_DATA;
         this.RECORD_DATA = record;
+        return oldRecordData;
     }
 
     updateRecordFromData(itemModel: MapModel, data: T): void {

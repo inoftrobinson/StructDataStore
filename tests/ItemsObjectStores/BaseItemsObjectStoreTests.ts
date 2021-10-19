@@ -1,7 +1,7 @@
+import * as immutable from "immutable";
 import {BasicFieldModel, MapModel} from "../../src/ModelsFields";
 import BasicItemsObjectStore from "../../src/Stores/ObjectStores/ItemsObjectStores/BasicItemsObjectStore";
 import SectionedItemsObjectStore from "../../src/Stores/ObjectStores/ItemsObjectStores/SectionedItemsObjectStore";
-import * as Immutable from "immutable";
 
 
 // export default (storeClass: typeof BasicItemsObjectStore | typeof SectionedItemsObjectStore) => {
@@ -385,9 +385,9 @@ export async function simpleUpdateDataToAttr(storeFactory: StoreFactory) {
             'field1': "c1.f1"
         }
     });
-    const retrievedRecord = await store.getAttr('record1');
-    expect(retrievedRecord).toEqual({
+    const retrievedRecord: immutable.RecordOf<StoreItemModel> | undefined = await store.getAttr('record1');
+    expect(retrievedRecord?.toJS()).toEqual({
         'value': "v",
-        'container': Immutable.Record()
+        'container': {'field1': "c1.f1"}
     });
 }

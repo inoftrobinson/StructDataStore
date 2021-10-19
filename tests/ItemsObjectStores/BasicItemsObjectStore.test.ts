@@ -17,7 +17,9 @@ import {
 function storeFactory<T>(itemModel: MapModel) {
     return new BasicItemsObjectStore<T>({
         itemModel: itemModel,
-        retrieveAllItemsCallable: () => Promise.resolve(undefined)
+        retrieveAllItemsCallable: () => Promise.resolve({
+            success: true, data: {'record1': {} as T}
+        })
     });
 }
 

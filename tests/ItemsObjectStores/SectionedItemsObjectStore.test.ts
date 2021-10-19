@@ -1,3 +1,4 @@
+import * as _ from 'lodash';
 import {MapModel} from "../../src/ModelsFields";
 import SectionedItemsObjectStore from "../../src/Stores/ObjectStores/ItemsObjectStores/SectionedItemsObjectStore";
 import {
@@ -17,8 +18,10 @@ import {
 function storeFactory<T>(itemModel: MapModel) {
     return new SectionedItemsObjectStore<T>({
         itemModel: itemModel,
-        retrieveSingleItemCallable: () => Promise.resolve(undefined),
-        retrieveMultipleItemsCallable: () => Promise.resolve(undefined),
+        retrieveSingleItemCallable: (key: string) => Promise.resolve({success: false, data: {} as T}),
+        retrieveMultipleItemsCallable: (keys: string[]) => Promise.resolve({
+            success: true, data: _.transform(keys, (output: { [key: string]: T }, key: string) => { output[key] = {} as T; })
+        })
     });
 }
 
