@@ -41,7 +41,7 @@ export default class SectionedItemsObjectStore<T extends { [p: string]: any }> e
         itemKey: string, itemData: immutable.RecordOf<T>
     ): Promise<{ oldValue: immutable.RecordOf<T> | null, subscribersPromise: Promise<any> }> {
         // Item update without having previously loaded the said item is allowed
-        const oldValue = this.RECORD_WRAPPERS[itemKey]?.RECORD_DATA;
+        const oldValue: immutable.RecordOf<T> | null = this.RECORD_WRAPPERS[itemKey]?.RECORD_DATA;
         this.RECORD_WRAPPERS[itemKey] = new ImmutableRecordWrapper<T>(itemData, this.props.itemModel);
         const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(itemKey);
         return {oldValue, subscribersPromise};

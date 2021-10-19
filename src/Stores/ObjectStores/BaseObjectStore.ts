@@ -59,16 +59,16 @@ export default abstract class BaseObjectStore<T extends { [p: string]: any }> ex
 
     abstract getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined>;
 
-    abstract getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Optional<U.Merge<O.P.Pick<T, S.Split<P, '.'>>>>>;
+    abstract getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Optional<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>>>>;
 
     // todo: implement two function (one with returned subscribers promise and the other not) for all operations
     abstract updateAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }>;
+        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
 
     async updateAttr<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<O.Path<T, S.Split<P, '.'>> | undefined> {
+        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
         return (await this.updateAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 
@@ -85,12 +85,12 @@ export default abstract class BaseObjectStore<T extends { [p: string]: any }> ex
     }
 
     abstract updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }>;
+        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
 
     async updateDataToAttr<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<O.Path<T, S.Split<P, '.'>> | undefined> {
+        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
         return (await this.updateDataToAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 
@@ -122,7 +122,7 @@ export default abstract class BaseObjectStore<T extends { [p: string]: any }> ex
 
     abstract removeAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>
-    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }>;
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
 
     async removeAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<O.Path<T, S.Split<P, '.'>> | undefined> {
         return (await this.removeAttrWithReturnedSubscribersPromise<P>(attrKeyPath)).oldValue;
@@ -130,9 +130,11 @@ export default abstract class BaseObjectStore<T extends { [p: string]: any }> ex
 
     abstract removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         attrsKeyPaths: F.AutoPath<T, P>[]
-    ): Promise<{ removedValues: U.Merge<O.P.Pick<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
+    ): Promise<{ removedValues: U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>> | undefined, subscribersPromise: Promise<any> }>;
 
-    async removeMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<U.Merge<O.P.Pick<T, S.Split<P, '.'>>> | undefined> {
+    async removeMultipleAttrs<P extends string>(
+        attrsKeyPaths: F.AutoPath<T, P>[]
+    ): Promise<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>> | undefined> {
         return (await this.removeMultipleAttrsWithReturnedSubscribersPromise<P>(attrsKeyPaths)).removedValues;
     }
 }

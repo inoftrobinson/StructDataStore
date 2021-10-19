@@ -76,7 +76,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return undefined;
     }
 
-    async getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>> {
+    async getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             return recordWrapper.getMultipleAttrs(attrsKeyPaths) as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>;
@@ -85,8 +85,8 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     }
 
     async updateAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
+        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = recordWrapper.updateAttr(attrKeyPath, value);
@@ -110,7 +110,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, ".">>
-    ): Promise<{ oldValue: O.Path<T, S.Split<P, ".">> | undefined; subscribersPromise: Promise<any> }> {
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }> {
         // todo: implement
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
@@ -122,7 +122,9 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return {oldValues: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
 
-    async deleteAttrWithReturnedSubscribersPromise<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<{ subscribersPromise: Promise<any> }> {
+    async deleteAttrWithReturnedSubscribersPromise<P extends string>(
+        attrKeyPath: F.AutoPath<T, P>
+    ): Promise<{ subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             recordWrapper.deleteAttr(attrKeyPath);
@@ -146,7 +148,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
 
     async removeAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>
-    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const oldValue = recordWrapper.removeAttr(attrKeyPath);
@@ -158,7 +160,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
 
     async removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         attrsKeyPaths: F.AutoPath<T, P>[]
-    ): Promise<{ removedValues: U.Merge<O.P.Pick<T, S.Split<P, '.'>>> | undefined; subscribersPromise: Promise<any> }> {
+    ): Promise<{ removedValues: U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>> | undefined; subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const removedValues = recordWrapper.removeMultipleAttrs(attrsKeyPaths);

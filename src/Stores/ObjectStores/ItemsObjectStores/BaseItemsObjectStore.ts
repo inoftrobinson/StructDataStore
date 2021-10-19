@@ -123,7 +123,7 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
 
     async getMultipleAttrs<P extends string>(
         attrsKeyPaths: F.AutoPath<{ [recordKey: string]: T }, P>[]
-    ): Promise<O.Optional<U.Merge<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>>> {
+    ): Promise<O.Optional<U.Merge<ImmutableCast<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>>>> {
         const attrsRelativeKeyPathsByItemsKeys: { [itemKey: string]: F.AutoPath<T, P>[] } = (
             this.makeAttrsRelativeKeyPathsByItemsKeys(attrsKeyPaths)
         );
@@ -142,14 +142,14 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
                 }
             }, {}
         );
-        return retrievedValues as U.Merge<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>;
+        return retrievedValues as U.Merge<ImmutableCast<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>>;
     }
 
     abstract updateItemWithSubscribersPromise(
         itemKey: string, itemData: immutable.RecordOf<T>
-    ): Promise<{oldValue: T | null, subscribersPromise: Promise<any>}>;
+    ): Promise<{oldValue: immutable.RecordOf<T> | null, subscribersPromise: Promise<any>}>;
 
-    async updateItem(itemKey: string, itemData: immutable.RecordOf<T>): Promise<T | null> {
+    async updateItem(itemKey: string, itemData: immutable.RecordOf<T>): Promise<immutable.RecordOf<T> | null> {
         return (await this.updateItemWithSubscribersPromise(itemKey, itemData)).oldValue;
     }
 
@@ -158,14 +158,14 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
     }
 
     async updateAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, value: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>
-    ): Promise<{ oldValue: O.Path<T, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
+        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, value: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>>
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         // const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
         const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);
         if (relativeAttrKeyPath != null) {
             const dataWrapper: ImmutableRecordWrapper<T> | null = await this.getSingleRecordItem(itemKey);
             if (dataWrapper != null) {
-                const oldValue: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>> | undefined = dataWrapper.updateAttr(relativeAttrKeyPath, value);
+                const oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined = dataWrapper.updateAttr(relativeAttrKeyPath, value);
                 const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
                 return {oldValue, subscribersPromise};
             }
@@ -179,8 +179,8 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
     }
 
     async updateCachedRecordAttr<P extends string>(
-        recordKey: string, attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<O.Path<T, S.Split<P, '.'>> | undefined> {
+        recordKey: string, attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
         return await this.updateAttr(`${recordKey}.${attrKeyPath}` as any, value as any);
     }
 
@@ -217,7 +217,7 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
             navigateToAttrKeyPathIntoMapModel(this.props.itemModel, relativeAttrKeyPath as string)
         );
         if (matchingField != null) {
-            const loadedValue = matchingField.dataLoader(value);
+            const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }>> = matchingField.dataLoader(value);
             return await this.updateAttrWithReturnedSubscribersPromise(attrKeyPath, loadedValue);
         }
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
@@ -226,7 +226,7 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
     async updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<{ [recordKey: string]: T }>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<{ [recordKey: string]: T }, M> | undefined, subscribersPromise: Promise<any> }> {
-        // todo: implement cxs
+        // todo: implement
         return {oldValues: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
 
@@ -267,11 +267,11 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
 
     async removeAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>
-    ): Promise<{ oldValue: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
+    ): Promise<{ oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
         if (dataWrapper != null) {
             if (relativeAttrKeyPath != null) {
-                const oldValue: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>> | undefined = dataWrapper.removeAttr(relativeAttrKeyPath);
+                const oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined = dataWrapper.removeAttr(relativeAttrKeyPath);
                 const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
                 return {oldValue, subscribersPromise};
             } else {
@@ -283,7 +283,7 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
 
     async removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         attrsKeyPaths: F.AutoPath<{ [recordKey: string]: T }, P>[]
-    ): Promise<{ removedValues: U.Merge<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
+    ): Promise<{ removedValues: U.Merge<ImmutableCast<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, '.'>>>> | undefined, subscribersPromise: Promise<any> }> {
         const attrsRelativeKeyPathsByItemsKeys: { [itemKey: string]: F.AutoPath<T, P>[] } = (
             this.makeAttrsRelativeKeyPathsByItemsKeys(attrsKeyPaths)
         );
@@ -303,6 +303,6 @@ export default abstract class BaseItemsObjectStore<T extends { [p: string]: any 
             }, {}
         );
         const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
-        return {removedValues: collectedOldValues as U.Merge<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>, subscribersPromise};
+        return {removedValues: collectedOldValues as U.Merge<ImmutableCast<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>>, subscribersPromise};
     }
 }
