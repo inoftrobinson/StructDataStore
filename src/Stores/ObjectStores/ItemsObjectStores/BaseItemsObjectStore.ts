@@ -8,7 +8,7 @@ import ImmutableRecordWrapper from "../../../ImmutableRecordWrapper";
 import {
     ImmutableCast,
     ObjectFlattenedRecursiveMutatorsResults,
-    ObjectOptionalFlattenedRecursiveMutators
+    ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast
 } from "../../../types";
 import {navigateToAttrKeyPathIntoMapModel} from "../../../utils/fieldsNavigation";
 
@@ -223,7 +223,7 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
 
-    async updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<{ [recordKey: string]: T }>>(
+    async updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast<{ [recordKey: string]: T }>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<{ [recordKey: string]: T }, M> | undefined, subscribersPromise: Promise<any> }> {
         // todo: implement

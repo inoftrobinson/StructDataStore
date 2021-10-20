@@ -6,7 +6,7 @@ import SubscriptionsManager from "../../SubscriptionsManager";
 import {
     ImmutableCast,
     ObjectFlattenedRecursiveMutatorsResults,
-    ObjectOptionalFlattenedRecursiveMutators,
+    ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast,
 } from "../../types";
 
 
@@ -85,20 +85,20 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
     }
 
     abstract updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
 
     async updateDataToAttr<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
     ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
         return (await this.updateDataToAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 
-    abstract updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<any>>(
+    abstract updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast<any>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<any, any> | undefined, subscribersPromise: Promise<any> }>;
 
-    async updateDataToMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+    async updateDataToMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast<T>>(
         mutators: M
     ): Promise<any> {  // ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined
         return (await this.updateDataToMultipleAttrsWithReturnedSubscribersPromise<M>(mutators)).oldValues;

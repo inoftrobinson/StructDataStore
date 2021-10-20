@@ -25,6 +25,10 @@ export type ObjectOptionalFlattenedRecursiveMutators<A extends { [p: string]: an
     // @ts-ignore
     O.Optional<{ [K in ObjectFlattenedRecursiveKeys<A>]: ImmutableCast<O.Path<A, S.Split<K, '.'>>> }>
 );
+export type ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast<A extends { [p: string]: any }> = (
+    // @ts-ignore
+    O.Optional<{ [K in ObjectFlattenedRecursiveKeys<A>]: O.Path<A, S.Split<K, '.'>> }>
+);
 // @ts-ignore
 export type ObjectFlattenedRecursiveMutatorsResults<A, M extends ObjectOptionalFlattenedRecursiveMutators<A>> = (
     // @ts-ignore
