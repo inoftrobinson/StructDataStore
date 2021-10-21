@@ -1,6 +1,5 @@
 import * as _ from 'lodash';
-import {MapModel} from "../../src/ModelsFields";
-import SectionedItemsObjectStore from "../../src/Stores/ObjectStores/ItemsObjectStores/SectionedItemsObjectStore";
+import {SectionedItemsObjectStore, MapModel} from "../../src";
 import {
     listenersSeparation,
     listenersSharing,
@@ -10,7 +9,7 @@ import {
     simpleGetMultipleAttrs,
     simpleRemoveAttr,
     simpleRemoveMultipleAttrs,
-    simpleUpdateAttr, simpleUpdateDataToAttr,
+    simpleUpdateAttr, simpleUpdateDataToAttr, simpleUpdateDataToMultipleAttrs,
     simpleUpdateMultipleAttrs
 } from "./BaseItemsObjectStoreTests";
 
@@ -47,4 +46,6 @@ describe('SectionedItemsObjectStore', () => {
     test('listeners separation', () => listenersSeparation(storeFactory));
 
     test('simple updateDataToAttr', () => simpleUpdateDataToAttr(storeFactory));
+
+    test('simple updateDataToMultipleAttrs', () => simpleUpdateDataToMultipleAttrs(storeFactory));
 });

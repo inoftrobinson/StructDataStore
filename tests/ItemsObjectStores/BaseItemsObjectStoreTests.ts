@@ -1,7 +1,5 @@
 import * as immutable from "immutable";
-import {BasicFieldModel, MapModel} from "../../src/ModelsFields";
-import BasicItemsObjectStore from "../../src/Stores/ObjectStores/ItemsObjectStores/BasicItemsObjectStore";
-import SectionedItemsObjectStore from "../../src/Stores/ObjectStores/ItemsObjectStores/SectionedItemsObjectStore";
+import {BasicItemsObjectStore, SectionedItemsObjectStore, BasicFieldModel, MapModel} from "../../src";
 
 
 // export default (storeClass: typeof BasicItemsObjectStore | typeof SectionedItemsObjectStore) => {
@@ -382,6 +380,35 @@ export async function simpleUpdateDataToAttr(storeFactory: StoreFactory) {
     await store.updateDataToAttr('record1', {
         'value': "v",
         'container': {
+            'field1': "c1.f1"
+        }
+    });
+    const retrievedRecord: immutable.RecordOf<StoreItemModel> | undefined = await store.getAttr('record1');
+    expect(retrievedRecord?.toJS()).toEqual({
+        'value': "v",
+        'container': {'field1': "c1.f1"}
+    });
+}
+
+export async function simpleUpdateDataToMultipleAttrs(storeFactory: StoreFactory) {
+    interface StoreItemModel {
+        value: string;
+        container: {
+            field1: string;
+        },
+    }
+    const store = storeFactory<StoreItemModel>(
+        new MapModel({fields: {
+            'value': new BasicFieldModel({}),
+            'container': new MapModel({fields: {
+                'field1': new BasicFieldModel({}),
+            }}),
+        }})
+    );
+
+    await store.updateDataToMultipleAttrs({
+        'record1.value': "v",
+        'record1.container': {
             'field1': "c1.f1"
         }
     });

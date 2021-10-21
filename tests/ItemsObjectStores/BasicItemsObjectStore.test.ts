@@ -1,5 +1,4 @@
-import {MapModel} from "../../src/ModelsFields";
-import BasicItemsObjectStore from "../../src/Stores/ObjectStores/ItemsObjectStores/BasicItemsObjectStore";
+import {BasicItemsObjectStore, MapModel} from "../../src";
 import {
     listenersSeparation,
     listenersSharing,
@@ -9,7 +8,7 @@ import {
     simpleGetMultipleAttrs,
     simpleRemoveAttr,
     simpleRemoveMultipleAttrs,
-    simpleUpdateAttr, simpleUpdateDataToAttr,
+    simpleUpdateAttr, simpleUpdateDataToAttr, simpleUpdateDataToMultipleAttrs,
     simpleUpdateMultipleAttrs
 } from "./BaseItemsObjectStoreTests";
 
@@ -45,4 +44,6 @@ describe('BasicItemsObjectStore', () => {
     test('listeners separation', () => listenersSeparation(storeFactory));
 
     test('simple updateDataToAttr', () => simpleUpdateDataToAttr(storeFactory));
+
+    test('simple updateDataToMultipleAttrs', () => simpleUpdateDataToMultipleAttrs(storeFactory));
 });

@@ -226,8 +226,18 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     async updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast<{ [recordKey: string]: T }>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<{ [recordKey: string]: T }, M> | undefined, subscribersPromise: Promise<any> }> {
-        // todo: implement
-        return {oldValues: undefined, subscribersPromise: Promise.resolve(undefined)};
+        const loadedMutators: { [mutatorAttrKeyPath: string]: ImmutableCast<any> } = (
+            _.transform(mutators, (output: { [mutatorAttrKeyPath: string]: ImmutableCast<any> }, mutatorValue: any, mutatorAttrKeyPath) => {
+                const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(mutatorAttrKeyPath);
+                const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null  = (
+                    navigateToAttrKeyPathIntoMapModel(this.props.itemModel, relativeAttrKeyPath as string)
+                );
+                if (matchingField != null) {
+                    output[mutatorAttrKeyPath] = matchingField.dataLoader(mutatorValue);
+                }
+            })
+        );
+        return await this.updateMultipleAttrsWithReturnedSubscribersPromise<M>(loadedMutators);
     }
 
     async deleteAttrWithReturnedSubscribersPromise<P extends string>(

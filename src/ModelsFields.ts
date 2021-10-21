@@ -63,20 +63,23 @@ export interface MapModelProps extends BasicFieldModelProps {
 
 export class MapModel extends ContainerFieldModel<MapModelProps> {
     public static readonly TYPE = 'MapField';
+    // todo: rename to RecordModel
 
     constructor(public readonly props: MapModelProps) {
         super({...props, customDefaultValue: props.required === true ? () => this.makeDefault() : undefined});
     }
 
     makeDefault() {
-        return immutable.Map(_.transform(this.props.fields, (result: { [key: string]: any }, fieldItem, fieldKey: string) => {
+        return this.dataLoader(_.mapValues(this.props.fields, (fieldItem) => resolveResultOrCallbackResult(fieldItem.props.customDefaultValue)));
+        /*return immutable.Record(_.transform(this.props.fields, (result: { [key: string]: any }, fieldItem, fieldKey: string) => {
             result[fieldKey] = resolveResultOrCallbackResult(fieldItem.props.customDefaultValue);
-        }, {}));
+        }, {}));*/
     }
 
     dataLoader(fieldData: any): any {
-        const recordValues = _.transform(this.props.fields,
-            (result: { [p: string]: any}, fieldItem: BaseFieldModel<any>, fieldKey: string) => {
+        const recordDefaultValues: { [fieldKey: string]: any } = {};
+        const recordValues = _.transform(
+            this.props.fields, (result: { [p: string]: any}, fieldItem: BaseFieldModel<any>, fieldKey: string) => {
                 const matchingItemData: any | undefined = fieldData[fieldKey];
                 if (matchingItemData == null) {
                     if (fieldItem.props.required !== true) {
@@ -89,11 +92,13 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
                 } else {
                     result[fieldKey] = matchingItemData;
                 }
+                recordDefaultValues[fieldKey] = fieldItem.props.customDefaultValue;
             }
         );
-        const recordDefaultValues = _.mapValues(recordValues, () => undefined);
+        // const recordDefaultValues = _.mapValues(recordValues, () => undefined);
         // We set the defaultValues to a map of undefined values for all the keys in our recordValues. This is crucial, as this allows
         //the deletion and removal of fields. Otherwise, the default values would be restored when the fields are deleted/removed.
+
         const recordFactory: immutable.Record.Factory<any> = immutable.Record<any>(recordDefaultValues);
         // The default values are used to created a record factory.
         return recordFactory(recordValues as Partial<any>);

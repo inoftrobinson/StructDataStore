@@ -1,9 +1,11 @@
 import * as _ from 'lodash';
 import {BaseStore} from "./BaseStore";
+import {BaseDataRetrievalPromiseResult} from "../models";
 
+export type RetrieveValueCallablePromiseResult<T> = BaseDataRetrievalPromiseResult<T>;
 
-interface BaseFieldProps {
-    retrieveDataCallable: () => Promise<any>;
+interface BaseFieldProps<T> {
+    retrieveValueCallable: () => Promise<RetrieveValueCallablePromiseResult<T>>;
     onRetrievalFailure?: (responseData: any) => any;
 }
 
@@ -19,14 +21,14 @@ export class ValueStore<T> extends BaseStore {
         if (this.pendingRetrievalPromise !== undefined) {
             return this.pendingRetrievalPromise;
         } else {
-            const retrievalPromise: Promise<T | null> = this.props.retrieveDataCallable().then(responseData => {
+            const retrievalPromise: Promise<T | null> = this.props.retrieveValueCallable().then((result: RetrieveValueCallablePromiseResult<T>) => {
                 this.pendingRetrievalPromise = undefined;
-                if (responseData.success === true) {
-                    const value: T = responseData.data;
+                if (result.success) {
+                    const value: T = result.data;
                     this.updateCachedValue(value);
                     return value;
                 } else {
-                    this.props.onRetrievalFailure?.(responseData);
+                    this.props.onRetrievalFailure?.(result.metadata);
                     return null;
                 }
             });

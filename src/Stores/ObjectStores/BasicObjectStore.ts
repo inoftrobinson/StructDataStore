@@ -3,28 +3,31 @@ import * as immutable from 'immutable';
 import {F, O, S, U} from 'ts-toolbelt';
 import {BaseObjectStore, BaseObjectStoreProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
-import {MapModel} from "../../ModelsFields";
+import {BasicFieldModel, MapModel, TypedDictFieldModel} from "../../ModelsFields";
 import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
 import {
     ImmutableCast,
     ObjectFlattenedRecursiveMutatorsResults,
     ObjectOptionalFlattenedRecursiveMutators
 } from "../../types";
+import {navigateToAttrKeyPathIntoMapModel} from "../../utils/fieldsNavigation";
+import {BaseDataRetrievalPromiseResult} from "../../models";
 
+export type RetrieveDataCallablePromiseResult<T> = BaseDataRetrievalPromiseResult<T>;
 
-export interface BasicObjectStoreProps extends BaseObjectStoreProps {
+export interface BasicObjectStoreProps<T> extends BaseObjectStoreProps {
     objectModel: MapModel;
-    retrieveDataCallable: () => Promise<any>;
+    retrieveDataCallable: () => Promise<RetrieveDataCallablePromiseResult<T>>;
     onRetrievalFailure?: (responseData: any) => any;
 }
 
-// todo: fix typing bug and remove the ts-ignore
-export // @ts-ignore
+export
+// @ts-ignore
 class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T> {
     public RECORD_WRAPPER?: ImmutableRecordWrapper<T>;
     private pendingRetrievalPromise?: Promise<ImmutableRecordWrapper<T> | null>;
 
-    constructor(public readonly props: BasicObjectStoreProps) {
+    constructor(public readonly props: BasicObjectStoreProps<T>) {
         super(props);
     }
 
@@ -32,17 +35,17 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         if (this.pendingRetrievalPromise !== undefined) {
             return this.pendingRetrievalPromise;
         } else {
-            const retrievalPromise: Promise<ImmutableRecordWrapper<T> | null> = this.props.retrieveDataCallable().then(responseData => {
+            const retrievalPromise: Promise<ImmutableRecordWrapper<T> | null> = this.props.retrieveDataCallable().then((result: RetrieveDataCallablePromiseResult<T>) => {
                 this.pendingRetrievalPromise = undefined;
-                if (responseData.success === true) {
+                if (result.success) {
                     const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(
-                        responseData.data as T, this.props.objectModel
+                        result.data, this.props.objectModel
                     ) as immutable.RecordOf<T>;
                     this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
                     this.triggerSubscribers();
                     return this.RECORD_WRAPPER;
                 } else {
-                    this.props.onRetrievalFailure?.(responseData);
+                    this.props.onRetrievalFailure?.(result.metadata);
                     return null;
                 }
             });
@@ -110,15 +113,30 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, ".">>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }> {
-        // todo: implement
+        const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = (
+            navigateToAttrKeyPathIntoMapModel(this.props.objectModel, attrKeyPath as string)
+        );
+        if (matchingField != null) {
+            const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(value);
+            return await this.updateAttrWithReturnedSubscribersPromise<P>(attrKeyPath, loadedValue);
+        }
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
 
     async updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined; subscribersPromise: Promise<any> }> {
-        // todo: implement
-        return {oldValues: undefined, subscribersPromise: Promise.resolve(undefined)};
+        const loadedMutators: { [mutatorAttrKeyPath: string]: ImmutableCast<any> } = (
+            _.transform(mutators, (output: { [mutatorAttrKeyPath: string]: ImmutableCast<any> }, mutatorValue: any, mutatorAttrKeyPath) => {
+                const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null  = (
+                    navigateToAttrKeyPathIntoMapModel(this.props.objectModel, mutatorAttrKeyPath as string)
+                );
+                if (matchingField != null) {
+                    output[mutatorAttrKeyPath] = matchingField.dataLoader(mutatorValue);
+                }
+            })
+        );
+        return await this.updateMultipleAttrsWithReturnedSubscribersPromise<M>(loadedMutators);
     }
 
     async deleteAttrWithReturnedSubscribersPromise<P extends string>(

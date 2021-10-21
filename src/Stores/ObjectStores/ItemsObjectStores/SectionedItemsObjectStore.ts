@@ -2,18 +2,12 @@ import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import ImmutableRecordWrapper from "../../../ImmutableRecordWrapper";
 import {BaseItemsObjectStore, BaseItemsObjectStoreProps} from "./BaseItemsObjectStore";
+import {BaseDataRetrievalPromiseResult} from "../../../models";
 
 
-export type RetrieveSingleItemCallablePromiseResult<T> = {
-    success: boolean;
-    data: T | null;
-    metadata?: { [metadataKey: string]: any }
-};
-export type RetrieveMultipleItemsCallablePromiseResult<T> = {
-    success: boolean;
-    data: { [itemKey: string]: T } | null;
-    metadata?: { [metadataKey: string]: any }
-};
+export type RetrieveSingleItemCallablePromiseResult<T> = BaseDataRetrievalPromiseResult<T>;
+export type RetrieveMultipleItemsCallablePromiseResult<T> = BaseDataRetrievalPromiseResult<{ [itemKey: string]: T }>;
+
 export interface SectionedItemsObjectStoreProps<T> extends BaseItemsObjectStoreProps {
     retrieveSingleItemCallable?: (key: string) => Promise<RetrieveSingleItemCallablePromiseResult<T>>;
     retrieveMultipleItemsCallable?: (keys: string[]) => Promise<RetrieveMultipleItemsCallablePromiseResult<T>>;

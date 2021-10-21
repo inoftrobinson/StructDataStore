@@ -10,7 +10,7 @@ interface StoreObjectModel {
 describe('BasicObjectStore', () => {
     test('Simple attribute retrieval', async () => {
         const store = new BasicObjectStore<StoreObjectModel>({
-            retrieveDataCallable: () => Promise.resolve(undefined),
+            retrieveDataCallable: () => Promise.resolve({success: true, data: {}}),
             objectModel: new MapModel({fields: {
                 'container1': new MapModel({fields: {
                     'field1': new BasicFieldModel({})
