@@ -7,6 +7,7 @@ import BaseObjectStore, {BaseObjectStoreProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
 import RecordSubscriptionsWrapper from "../../RecordSubscriptionsWrapper";
 import BaseObjectStoreV2 from "./BaseObjectStore";
+import {separateAttrKeyPath} from "../utils/attrKeyPaths";
 
 
 export interface ObjectStoreProps extends BaseObjectStoreProps {
@@ -128,7 +129,7 @@ export class ItemsObjectStore<T> extends BaseObjectStoreV2<T> {
     protected getMatchingDataWrapper<P extends string>(attrKeyPath: F.AutoPath<T, P>): {
         dataWrapper: RecordDataWrapper<T>, relativeAttrKeyPath: F.AutoPath<T, P>
     } {
-        const attrKeyPathParts: string[] = attrKeyPath.split('.');
+        const attrKeyPathParts: string[] = separateAttrKeyPath(attrKeyPath);
         // this.CACHED_RECORDS_DATA_WRAPPERS[attrKeyPathParts[0]] = this.makeRecordDataWrapperFromItem(attrKeyPathParts[0], recordItem);
         const dataWrapper = this.CACHED_RECORDS_DATA_WRAPPERS[attrKeyPathParts[0]];
         const relativeAttrKeyPath = attrKeyPathParts.slice(1).join('.') as F.AutoPath<T, P>;

@@ -8,6 +8,7 @@ import {
     navigateToAttrKeyPathIntoMapModelV2,
     navigateToAttrKeyPathPartsIntoMapModel
 } from "./utils/fieldsNavigation";
+import {separateAttrKeyPath} from "./utils/attrKeyPaths";
 
 
 export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
@@ -120,7 +121,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
 
     // getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): O.Path<T, S.Split<P, '.'>> {
     getAttr(attrKeyPath: string): any {
-        const attrKeyPathElements: string[] = attrKeyPath.split('.');
+        const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
         return this.RECORD_DATA.getIn(attrKeyPathElements);
     }
 
@@ -128,7 +129,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
     getMultipleAttrs(attrsKeyPaths: string[]): { [attrKeyPath: string]: any } {
         const retrievedValues: { [attrKeyPath: string]: any } = _.transform(attrsKeyPaths,
             (output: {[p: string]: any}, attrKeyPath: string) => {
-                const attrKeyPathElements: string[] = attrKeyPath.split('.');
+                const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
                 output[attrKeyPath] = this.RECORD_DATA.getIn(attrKeyPathElements);
             }, {}
         );
@@ -136,9 +137,9 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
     }
 
     // updateAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>, value: any): O.Path<T, S.Split<P, '.'>> | undefined {
-    updateAttr(attrKeyPath: string, value: any): any | undefined {
+    updateAttr(attrKeyPath: string | string[], value: any): any | undefined {
         const immutableValue: any = immutable.fromJS(value);
-        const attrKeyPathElements: string[] = attrKeyPath.split('.');
+        const attrKeyPathElements: string[] = _.isArray(attrKeyPath) ? attrKeyPath : separateAttrKeyPath(attrKeyPath);
         const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
         this.RECORD_DATA = this.RECORD_DATA.setIn(attrKeyPathElements, immutableValue);
         return oldValue;
@@ -153,7 +154,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
         let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
         const oldValues: { [attrKeyPath: string]: any | undefined } = _.mapValues(mutators, (value: any, attrKeyPath: string) => {
             const immutableValue: any = immutable.fromJS(value);
-            const attrKeyPathElements: string[] = attrKeyPath.split('.');
+            const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
             const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
             const rar = this.RECORD_DATA.toJS();
 
@@ -184,7 +185,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
 
     // deleteAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): void {
     deleteAttr(attrKeyPath: string): void {
-        const attrKeyPathElements: string[] = attrKeyPath.split('.');
+        const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
         this.RECORD_DATA = this.RECORD_DATA.deleteIn(attrKeyPathElements);
     }
 
@@ -197,7 +198,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
         // todo: move to a mergeDeep of mutators instead of the repeated call to deleteIn
         map.mergeDeep
         const mutators = _.transform(attrsKeyPaths, (result: {}, attrKeyPath: F.AutoPath<T, P>) => {
-            const attrKeyPathElements: string[] = attrKeyPath.split('.');
+            const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
             result[attrKeyPath] = undefined;
             let container = result;
             _.forEach(attrKeyPathElements, (attrKeyPathPart: string) => {
@@ -214,7 +215,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
          */
         let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
         _.forEach(attrsKeyPaths, (attrKeyPath: string) => {
-            const attrKeyPathElements: string[] = attrKeyPath.split('.');
+            const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
             alteredRecordData = alteredRecordData.deleteIn(attrKeyPathElements);
         });
         this.RECORD_DATA = alteredRecordData;
@@ -222,7 +223,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
 
     // removeAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): O.Path<T, S.Split<P, '.'>> | undefined {
     removeAttr(attrKeyPath: string): any | undefined {
-        const attrKeyPathElements: string[] = attrKeyPath.split('.');
+        const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
         const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
         this.RECORD_DATA = this.RECORD_DATA.deleteIn(attrKeyPathElements);
         return oldValue;
@@ -235,7 +236,7 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
         }
         let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
         const oldValues: { [attrKeyPath: string]: any | undefined } = _.transform(attrsKeyPaths, (result: {}, attrKeyPath: string) => {
-            const attrKeyPathElements: string[] = attrKeyPath.split('.');
+            const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
             const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
             alteredRecordData = alteredRecordData.deleteIn(attrKeyPathElements);
             return oldValue;

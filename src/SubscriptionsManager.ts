@@ -36,7 +36,7 @@ export default class SubscriptionsManager<T> {
         return subscriptionIndex;
     }
 
-    private makeAllAttributeKeyPathsCombinations(attrKeyPath: string): string[] {
+    private makeAllAttributeKeyPathsCombinations(attrKeyPath: string | string[]): string[] {
         const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
         return _.map(attrKeyPathElements, ((__, pathElementIndex: number) => attrKeyPathElements.slice(0, pathElementIndex + 1).join('.')));
     }
@@ -82,7 +82,7 @@ export default class SubscriptionsManager<T> {
         ]);
     }
 
-    async triggerSubscribersForAttr(attrKeyPath: string): Promise<void> {
+    async triggerSubscribersForAttr(attrKeyPath: string | string[]): Promise<void> {
         /* Trigger subscribers for specified attribute key path, its parent items, object wide and the parent field subscribers */
         const promises: Promise<any>[] = [];
         const allAttributeKeyPathsCombinations: string[] = this.makeAllAttributeKeyPathsCombinations(attrKeyPath);

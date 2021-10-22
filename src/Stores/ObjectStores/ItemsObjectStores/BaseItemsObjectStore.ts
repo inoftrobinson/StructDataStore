@@ -11,6 +11,7 @@ import {
     ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast
 } from "../../../types";
 import {navigateToAttrKeyPathIntoMapModelV2} from "../../../utils/fieldsNavigation";
+import {separateAttrKeyPath} from "../../../utils/attrKeyPaths";
 
 
 export interface BaseItemsObjectStoreProps extends BaseObjectStoreProps {
@@ -25,7 +26,7 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     private makeRelativeAttrKeyPath<P extends string>(attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>): {
         itemKey: string, relativeAttrKeyPath: F.AutoPath<T, P> | null
     } {
-        const attrKeyPathParts: string[] = attrKeyPath.split('.');
+        const attrKeyPathParts: string[] = separateAttrKeyPath(attrKeyPath);
         const relativeAttrKeyPath: F.AutoPath<T, P> | null = (
             attrKeyPathParts.length > 1 ? attrKeyPathParts.slice(1).join('.') as F.AutoPath<T, P> : null
         );
@@ -158,7 +159,7 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     }
 
     async updateAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, value: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>>
+        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P> | string[], value: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         // const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
         const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);

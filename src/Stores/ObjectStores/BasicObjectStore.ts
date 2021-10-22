@@ -83,11 +83,11 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         if (recordWrapper != null) {
             return recordWrapper.getMultipleAttrs(attrsKeyPaths) as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>;
         }
-        return {} as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>;
+        return {} as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, '.'>>>>;
     }
 
     async updateAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+        attrKeyPath: F.AutoPath<T, P> | string[], value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
@@ -111,7 +111,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     }
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, ".">>
+        attrKeyPath: F.AutoPath<T, P> | string[], value: O.Path<T, S.Split<P, ".">>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }> {
         const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = (
             navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, attrKeyPath as string)

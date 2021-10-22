@@ -62,11 +62,11 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
     abstract getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Optional<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>>>>;
 
     abstract updateAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+        attrKeyPath: F.AutoPath<T, P> | string[], value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
 
     async updateAttr<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+        attrKeyPath: F.AutoPath<T, P> | string[], value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
     ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
         return (await this.updateAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
@@ -86,10 +86,16 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
     abstract updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
+    abstract updateDataToAttrWithReturnedSubscribersPromise<P extends string[]>(
+        attrKeyPath: F.AutoPath<T, S.Join<P, '.'>>, value: O.Path<T, P>
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, P>> | undefined, subscribersPromise: Promise<any> }>;
 
-    async updateDataToAttr<P extends string>(
+    /*async updateDataToAttr<P extends string>(
         attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
+    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined>;*/
+    async updateDataToAttr<P extends string[]>(
+        attrKeyPath: string[], value: O.Path<T, P>
+    ): Promise<ImmutableCast<O.Path<T, P>> | undefined> {
         return (await this.updateDataToAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 

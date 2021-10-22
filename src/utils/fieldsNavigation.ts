@@ -1,4 +1,5 @@
 import {BasicFieldModel, ContainerFieldModel, MapModel, TypedDictFieldModel} from "../ModelsFields";
+import {separateAttrKeyPath} from "./attrKeyPaths";
 
 /*
 function getMapModelAtPathParts(
@@ -25,7 +26,7 @@ export function navigateToAttrKeyPathIntoMapModel(
     mapModel: MapModel, attrKeyPath: string,
     callback?: (mapField: MapModel, attrKeyPath: string) => any
 ): BasicFieldModel | TypedDictFieldModel | MapModel | null {
-    const attrKeyPathParts: string[] = attrKeyPath.split('.');
+    const attrKeyPathParts: string[] = separateAttrKeyPath(attrKeyPath);
     const navigatedMapModel: MapModel | null = getMapModelAtPathParts(mapModel, attrKeyPathParts.slice(0, -1), callback);
     return navigatedMapModel != null ? navigatedMapModel.props.fields[attrKeyPathParts.slice(-1)[0]] : null;
 }
@@ -55,7 +56,7 @@ export function navigateToAttrKeyPathIntoMapModelV2(
     mapModel: MapModel, attrKeyPath: string,
     callback?: (mapField: MapModel, attrKeyPath: string) => any
 ): BasicFieldModel | TypedDictFieldModel | MapModel | null {
-    const attrKeyPathParts: string[] = attrKeyPath.split('.');
+    const attrKeyPathParts: string[] = separateAttrKeyPath(attrKeyPath);
     return navigateToAttrKeyPathPartsIntoMapModel(mapModel, attrKeyPathParts);
 }
 

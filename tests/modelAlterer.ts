@@ -39,3 +39,5 @@ const castedNumber: CastListToImmutable<1, 1> = null as any;
 
 const castedObject: CastListToImmutable<{}, {}> = null as any;
 
+
+const rar3: S.Split<O.Paths<{ container: { field1: number } }>, 'container'> = null as any;

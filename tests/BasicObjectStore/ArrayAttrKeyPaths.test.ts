@@ -433,8 +433,8 @@ describe('BasicObjectStore', () => {
         );
         store.loadFromData({items: {}});
 
-        await store.updateDataToAttr('items.item42A', "i1.i42A");
-        const retrievedItem: any | undefined = await store.getAttr('items.item42A');
+        await store.updateDataToAttr(['items', 'itemWithRestrictedChar..trailing'], "i1.i42A");
+        const retrievedItem: any | undefined = await store.getAttr(['items', 'itemWithRestrictedChar..trailing']);
         expect(retrievedItem).toEqual("i1.i42A");
     });
 
