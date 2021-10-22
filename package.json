@@ -54,6 +54,7 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
+    "build-publish": "tsc & yarn publish",
     "doc": "tsc && jsdoc -c ./.jsdoc.json"
   }
 }
