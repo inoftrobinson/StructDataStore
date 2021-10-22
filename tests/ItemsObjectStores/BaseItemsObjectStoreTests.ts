@@ -1,5 +1,11 @@
 import * as immutable from "immutable";
-import {BasicItemsObjectStore, SectionedItemsObjectStore, BasicFieldModel, MapModel} from "../../src";
+import {
+    BasicItemsObjectStore,
+    SectionedItemsObjectStore,
+    BasicFieldModel,
+    MapModel,
+    TypedDictFieldModel
+} from "../../src";
 
 
 // export default (storeClass: typeof BasicItemsObjectStore | typeof SectionedItemsObjectStore) => {
@@ -416,5 +422,55 @@ export async function simpleUpdateDataToMultipleAttrs(storeFactory: StoreFactory
     expect(retrievedRecord?.toJS()).toEqual({
         'value': "v",
         'container': {'field1': "c1.f1"}
+    });
+}
+
+export async function typedDictUpdateDataToAttr(storeFactory: StoreFactory) {
+    interface StoreItemModel {
+        items: { [itemKey: string]: string }
+    }
+    const store = storeFactory<StoreItemModel>(
+        new MapModel({fields: {
+            'items': new TypedDictFieldModel({
+                keyName: 'itemKey', keyType: 'string',
+                itemType: new BasicFieldModel({})
+            }),
+        }})
+    );
+    store.loadFromData({'record1': {items: {}}});
+
+    await store.updateDataToAttr('record1.items.item42A', "i1.i42A");
+    const retrievedItem: any | undefined = await store.getAttr('record1.items.item42A');
+    expect(retrievedItem).toEqual("i1.i42A");
+}
+
+export async function typedDictUpdateDataToMultipleAttrs(storeFactory: StoreFactory) {
+    interface StoreItemModel {
+        items: { [itemKey: string]: string },
+    }
+    const store = storeFactory<StoreItemModel>(
+        new MapModel({fields: {
+            'items': new TypedDictFieldModel({
+                keyName: 'itemKey', keyType: 'string',
+                itemType: new BasicFieldModel({})
+            }),
+        }})
+    );
+    store.loadFromData({'record1': {items: {}}});
+
+    await store.updateDataToMultipleAttrs({
+        'record1.items.item42A': "i1.i42A",
+        'record1.items.item42B': "i2.i42B"
+    });
+    const retrievedItems: {
+        'record1.items.item42A': string | undefined,
+        'record1.items.item42B': string | undefined,
+    } = await store.getMultipleAttrs([
+        'record1.items.item42A',
+        'record1.items.item42B'
+    ]);
+    expect(retrievedItems).toEqual({
+        'record1.items.item42A': "i1.i42A",
+        'record1.items.item42B': "i2.i42B"
     });
 }

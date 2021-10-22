@@ -10,7 +10,7 @@ import {
     ObjectFlattenedRecursiveMutatorsResults,
     ObjectOptionalFlattenedRecursiveMutators
 } from "../../types";
-import {navigateToAttrKeyPathIntoMapModel} from "../../utils/fieldsNavigation";
+import {navigateToAttrKeyPathIntoMapModel, navigateToAttrKeyPathIntoMapModelV2} from "../../utils/fieldsNavigation";
 import {BaseDataRetrievalPromiseResult} from "../../models";
 
 export type RetrieveDataCallablePromiseResult<T> = BaseDataRetrievalPromiseResult<T>;
@@ -114,7 +114,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, ".">>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }> {
         const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = (
-            navigateToAttrKeyPathIntoMapModel(this.props.objectModel, attrKeyPath as string)
+            navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, attrKeyPath as string)
         );
         if (matchingField != null) {
             const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(value);
@@ -129,7 +129,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         const loadedMutators: { [mutatorAttrKeyPath: string]: ImmutableCast<any> } = (
             _.transform(mutators, (output: { [mutatorAttrKeyPath: string]: ImmutableCast<any> }, mutatorValue: any, mutatorAttrKeyPath) => {
                 const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null  = (
-                    navigateToAttrKeyPathIntoMapModel(this.props.objectModel, mutatorAttrKeyPath as string)
+                    navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, mutatorAttrKeyPath as string)
                 );
                 if (matchingField != null) {
                     output[mutatorAttrKeyPath] = matchingField.dataLoader(mutatorValue);

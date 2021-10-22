@@ -8,8 +8,12 @@ import {
     simpleGetMultipleAttrs,
     simpleRemoveAttr,
     simpleRemoveMultipleAttrs,
-    simpleUpdateAttr, simpleUpdateDataToAttr, simpleUpdateDataToMultipleAttrs,
-    simpleUpdateMultipleAttrs
+    simpleUpdateAttr,
+    simpleUpdateDataToAttr,
+    simpleUpdateDataToMultipleAttrs,
+    simpleUpdateMultipleAttrs,
+    typedDictUpdateDataToAttr,
+    typedDictUpdateDataToMultipleAttrs
 } from "./BaseItemsObjectStoreTests";
 
 
@@ -46,4 +50,8 @@ describe('BasicItemsObjectStore', () => {
     test('simple updateDataToAttr', () => simpleUpdateDataToAttr(storeFactory));
 
     test('simple updateDataToMultipleAttrs', () => simpleUpdateDataToMultipleAttrs(storeFactory));
+
+    test('typedDict updateDataToMultipleAttrs', () => typedDictUpdateDataToAttr(storeFactory));
+
+    test('typedDict updateDataToMultipleAttrs', () => typedDictUpdateDataToMultipleAttrs(storeFactory));
 });

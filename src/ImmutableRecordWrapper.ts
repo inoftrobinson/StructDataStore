@@ -3,7 +3,11 @@ import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "./DataProcessors";
 import {MapModel} from "./ModelsFields";
-import {navigateToAttrKeyPathIntoMapModel} from "./utils/fieldsNavigation";
+import {
+    navigateToAttrKeyPathIntoMapModel,
+    navigateToAttrKeyPathIntoMapModelV2,
+    navigateToAttrKeyPathPartsIntoMapModel
+} from "./utils/fieldsNavigation";
 
 
 export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
@@ -153,22 +157,22 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
             const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
             const rar = this.RECORD_DATA.toJS();
 
-            let currentItemModel = this.itemModel;
+            // navigateToAttrKeyPathIntoMapModelV2(this.itemModel, currentAttrKeyPath, ());
+
             for (let i=0; i < attrKeyPathElements.length - 1; i++) {
-                const currentPathElements = attrKeyPathElements.slice(0, i+1);
-                const currentAttrKeyPath: string = currentPathElements.join('.');
-                const field = navigateToAttrKeyPathIntoMapModel(this.itemModel, currentAttrKeyPath);
-                if (field != null) {
+                const currentPathElements: string[] = attrKeyPathElements.slice(0, i+1);
+                const fieldModel = navigateToAttrKeyPathPartsIntoMapModel(this.itemModel, currentPathElements);
+                if (fieldModel != null) {
                     const retrievedItem = alteredRecordData.getIn(currentPathElements);
                     if (retrievedItem === undefined) {
-                        alteredRecordData = alteredRecordData.setIn(currentPathElements, field.makeDefault());
+                        alteredRecordData = alteredRecordData.setIn(currentPathElements, fieldModel.makeDefault());
                         // todo: stop using customDefaultValue and use a factory (for list's, map's and record's ?)
                     }
                 }
             }
             /*_.forEach(attrKeyPathElements.slice(0, -1), (attrKeyPathPart: string, index: number) => {
                 const parts = attrKeyPathElements.slice(0, index + 1);
-                navigateToAttrKeyPathIntoMapModel(this.itemModel, )
+                navigateToAttrKeyPathIntoMapModelV2(this.itemModel, )
                 const item = alteredRecordData.getIn()
             });*/
             alteredRecordData = alteredRecordData.setIn(attrKeyPathElements, immutableValue);

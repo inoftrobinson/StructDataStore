@@ -17,7 +17,10 @@ export abstract class BaseFieldModel<P extends PrimitiveRestrainedFieldModelProp
     }
 
     abstract dataLoader(fieldData: any): any;
+
+    abstract makeDefault(): any;
 }
+
 
 export interface BasicFieldModelProps extends PrimitiveRestrainedFieldModelProps {
     customDefaultValue?: any | (() => any);
@@ -30,6 +33,10 @@ export class BasicFieldModel extends BaseFieldModel<BasicFieldModelProps> {
 
     dataLoader(fieldData: any): any {
         return immutable.fromJS(fieldData);
+    }
+
+    makeDefault(): undefined {
+        return undefined;
     }
 }
 
@@ -55,6 +62,8 @@ export abstract class ContainerFieldModel<T> extends BaseFieldModel<T & BasicFie
         const constructor = this.constructor as any;
         return constructor['TYPE'];
     }
+
+    abstract navigateToAttrModel(attrKeyPathParts: string[]): any | null;
 }
 
 export interface MapModelProps extends BasicFieldModelProps {
@@ -67,6 +76,18 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
 
     constructor(public readonly props: MapModelProps) {
         super({...props, customDefaultValue: props.required === true ? () => this.makeDefault() : undefined});
+    }
+
+    navigateToAttrModel(attrKeyPathParts: string[]) {
+        if (attrKeyPathParts.length > 0) {
+            const fieldMatchingFirstPathPart: any | undefined = this.props.fields[attrKeyPathParts[0]];
+            if (fieldMatchingFirstPathPart !== undefined) {
+                return [fieldMatchingFirstPathPart, attrKeyPathParts.slice(1)];
+            } else {
+                return [null, attrKeyPathParts];
+            }
+        }
+        return [this, attrKeyPathParts];
     }
 
     makeDefault() {
@@ -108,7 +129,7 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
 export interface TypedDictProps extends ComplexBasicFieldModelProps {
     keyType: string;
     keyName: string;
-    itemType: MapModel | "__ACTIVE_SELF_DICT__";
+    itemType: BaseFieldModel<any> | "__ACTIVE_SELF_DICT__";
 }
 
 export class TypedDictFieldModel extends ContainerFieldModel<TypedDictProps> {
@@ -116,6 +137,13 @@ export class TypedDictFieldModel extends ContainerFieldModel<TypedDictProps> {
 
     constructor(props: TypedDictProps & BasicFieldModelProps) {
         super({...props, customDefaultValue: props.useEmptyAsDefault === true ? () => immutable.Map() : undefined});
+    }
+
+    navigateToAttrModel(attrKeyPathParts: string[]) {
+        if (attrKeyPathParts.length > 0) {
+            return [this.props.itemType, attrKeyPathParts.slice(1)];
+        }
+        return [this, attrKeyPathParts];
     }
 
     dataLoader(fieldData: any): Immutable.Map<string, any> {

@@ -10,7 +10,7 @@ import {
     simpleRemoveAttr,
     simpleRemoveMultipleAttrs,
     simpleUpdateAttr, simpleUpdateDataToAttr, simpleUpdateDataToMultipleAttrs,
-    simpleUpdateMultipleAttrs
+    simpleUpdateMultipleAttrs, typedDictUpdateDataToAttr, typedDictUpdateDataToMultipleAttrs
 } from "./BaseItemsObjectStoreTests";
 
 
@@ -48,4 +48,8 @@ describe('SectionedItemsObjectStore', () => {
     test('simple updateDataToAttr', () => simpleUpdateDataToAttr(storeFactory));
 
     test('simple updateDataToMultipleAttrs', () => simpleUpdateDataToMultipleAttrs(storeFactory));
+
+    test('typedDict updateDataToMultipleAttrs', () => typedDictUpdateDataToAttr(storeFactory));
+
+    test('typedDict updateDataToMultipleAttrs', () => typedDictUpdateDataToMultipleAttrs(storeFactory));
 });

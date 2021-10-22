@@ -10,7 +10,7 @@ import {
     ObjectFlattenedRecursiveMutatorsResults,
     ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast
 } from "../../../types";
-import {navigateToAttrKeyPathIntoMapModel} from "../../../utils/fieldsNavigation";
+import {navigateToAttrKeyPathIntoMapModel, navigateToAttrKeyPathIntoMapModelV2} from "../../../utils/fieldsNavigation";
 
 
 export interface BaseItemsObjectStoreProps extends BaseObjectStoreProps {
@@ -40,13 +40,13 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         return {dataWrapper, relativeAttrKeyPath};
     }
 
-    makeRecordDataWrapperFromItem(recordKey: string, recordItem: immutable.RecordOf<T>): ImmutableRecordWrapper<T> {
-        return new ImmutableRecordWrapper<T>(recordItem, this.props.itemModel.props.fields[recordKey] as MapModel);
+    protected makeRecordDataWrapperFromItem(recordItem: immutable.RecordOf<T>): ImmutableRecordWrapper<T> {
+        return new ImmutableRecordWrapper<T>(recordItem, this.props.itemModel);
     }
 
-    makeRecordWrapperFromData(recordKey: string, recordData: T): ImmutableRecordWrapper<T> | null {
+    protected makeRecordWrapperFromData(recordKey: string, recordData: T): ImmutableRecordWrapper<T> | null {
         const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel<T>(recordData, this.props.itemModel);
-        return recordItem != null ? this.makeRecordDataWrapperFromItem(recordKey, recordItem) : null;
+        return recordItem != null ? this.makeRecordDataWrapperFromItem(recordItem) : null;
     }
 
     protected recordsDataToWrappers(data: { [recordKey: string]: T }): { [recordKey: string]: ImmutableRecordWrapper<T> } {
@@ -214,7 +214,7 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     ): Promise<{ oldValue: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
         const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);
         const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = relativeAttrKeyPath == null ? this.props.itemModel : (
-            navigateToAttrKeyPathIntoMapModel(this.props.itemModel, relativeAttrKeyPath as string)
+            navigateToAttrKeyPathIntoMapModelV2(this.props.itemModel, relativeAttrKeyPath as string)
         );
         if (matchingField != null) {
             const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(value);
@@ -230,7 +230,7 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
             _.transform(mutators, (output: { [mutatorAttrKeyPath: string]: ImmutableCast<any> }, mutatorValue: any, mutatorAttrKeyPath) => {
                 const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(mutatorAttrKeyPath);
                 const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null  = (
-                    navigateToAttrKeyPathIntoMapModel(this.props.itemModel, relativeAttrKeyPath as string)
+                    navigateToAttrKeyPathIntoMapModelV2(this.props.itemModel, relativeAttrKeyPath as string)
                 );
                 if (matchingField != null) {
                     output[mutatorAttrKeyPath] = matchingField.dataLoader(mutatorValue);
