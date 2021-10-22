@@ -6,7 +6,7 @@ import {
     BasicItemsObjectStore,
     SectionedItemsObjectStore,
     TypedDictFieldModel
-} from "../src";
+} from "../../src";
 
 export type StoreFactory = <T>(itemModel: MapModel) => BasicItemsObjectStore<T> | SectionedItemsObjectStore<T>;
 

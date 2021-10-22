@@ -1,5 +1,5 @@
 import './ItemsObjectStores/test';
-import './BasicObjectStore.test';
+import './BasicObjectStore/BasicObjectStore.test';
 
 test('', () => {});
 // Empty test to make the file detected as being an

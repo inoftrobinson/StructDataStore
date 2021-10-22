@@ -10,7 +10,7 @@ import {
     ObjectFlattenedRecursiveMutatorsResults,
     ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast
 } from "../../../types";
-import {navigateToAttrKeyPathIntoMapModel, navigateToAttrKeyPathIntoMapModelV2} from "../../../utils/fieldsNavigation";
+import {navigateToAttrKeyPathIntoMapModelV2} from "../../../utils/fieldsNavigation";
 
 
 export interface BaseItemsObjectStoreProps extends BaseObjectStoreProps {
@@ -219,6 +219,8 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         if (matchingField != null) {
             const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(value);
             return await this.updateAttrWithReturnedSubscribersPromise<P>(attrKeyPath, loadedValue);
+        } else {
+            console.error(`${attrKeyPath} was not a valid path`);
         }
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
@@ -234,6 +236,8 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
                 );
                 if (matchingField != null) {
                     output[mutatorAttrKeyPath] = matchingField.dataLoader(mutatorValue);
+                } else {
+                    console.error(`${mutatorAttrKeyPath} was not a valid path`);
                 }
             })
         );
