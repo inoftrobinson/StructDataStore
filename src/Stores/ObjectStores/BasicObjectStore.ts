@@ -70,7 +70,8 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return {subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    async getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined> {
+    async getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined>;
+    async getAttr<P extends O.Paths<T>>(attrKeyPath: P): Promise<ImmutableCast<O.Path<T, P>> | undefined> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             return recordWrapper.getAttr(attrKeyPath);
@@ -112,9 +113,12 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P> | string[], value: O.Path<T, S.Split<P, ".">>
-    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }> {
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }>;
+    async updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<T>>(
+        attrKeyPath: P, value: O.Path<T, P>
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, P>> | undefined, subscribersPromise: Promise<any> }> {
         const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = (
-            navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, attrKeyPath as string)
+            navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, attrKeyPath)
         );
         if (matchingField != null) {
             const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(value);

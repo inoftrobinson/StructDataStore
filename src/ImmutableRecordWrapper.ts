@@ -120,13 +120,13 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
     /*const [alterSuccess, alteredRecordData, oldAttributeValue] = this.safeAlterRecordDataInPath(attrKeyPathElements, immutableValue);*/
 
     // getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): O.Path<T, S.Split<P, '.'>> {
-    getAttr(attrKeyPath: string): any {
+    getAttr(attrKeyPath: string | string[]): any {
         const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
         return this.RECORD_DATA.getIn(attrKeyPathElements);
     }
 
     // getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): U.Merge<O.P.Pick<T, S.Split<P, ".">>> {
-    getMultipleAttrs(attrsKeyPaths: string[]): { [attrKeyPath: string]: any } {
+    getMultipleAttrs(attrsKeyPaths: (string | string[])[]): { [attrKeyPath: string]: any } {
         const retrievedValues: { [attrKeyPath: string]: any } = _.transform(attrsKeyPaths,
             (output: {[p: string]: any}, attrKeyPath: string) => {
                 const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);

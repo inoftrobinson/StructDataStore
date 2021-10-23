@@ -212,7 +212,10 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, value: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>
-    ): Promise<{ oldValue: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>> | undefined, subscribersPromise: Promise<any> }> {
+    ): Promise<{ oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
+    async updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<{ [recordKey: string]: T }>>(
+        attrKeyPath: P, value: O.Path<{ [recordKey: string]: T }, P>
+    ): Promise<{ oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> | undefined, subscribersPromise: Promise<any> }> {
         const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);
         const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = relativeAttrKeyPath == null ? this.props.itemModel : (
             navigateToAttrKeyPathIntoMapModelV2(this.props.itemModel, relativeAttrKeyPath as string)

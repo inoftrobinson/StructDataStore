@@ -86,15 +86,15 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
     abstract updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
-    abstract updateDataToAttrWithReturnedSubscribersPromise<P extends string[]>(
-        attrKeyPath: F.AutoPath<T, S.Join<P, '.'>>, value: O.Path<T, P>
+    abstract updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<T>>(
+        attrKeyPath: P, value: O.Path<T, P>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, P>> | undefined, subscribersPromise: Promise<any> }>;
 
-    /*async updateDataToAttr<P extends string>(
+    async updateDataToAttr<P extends string>(
         attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined>;*/
-    async updateDataToAttr<P extends string[]>(
-        attrKeyPath: string[], value: O.Path<T, P>
+    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined>;
+    async updateDataToAttr<P extends O.Paths<T>>(
+        attrKeyPath: P, value: O.Path<T, P>
     ): Promise<ImmutableCast<O.Path<T, P>> | undefined> {
         return (await this.updateDataToAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }

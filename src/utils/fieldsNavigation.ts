@@ -53,7 +53,7 @@ export function navigateToAttrKeyPathPartsIntoMapModel(
 }
 
 export function navigateToAttrKeyPathIntoMapModelV2(
-    mapModel: MapModel, attrKeyPath: string,
+    mapModel: MapModel, attrKeyPath: string | string[],
     callback?: (mapField: MapModel, attrKeyPath: string) => any
 ): BasicFieldModel | TypedDictFieldModel | MapModel | null {
     const attrKeyPathParts: string[] = separateAttrKeyPath(attrKeyPath);

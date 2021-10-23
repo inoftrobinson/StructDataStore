@@ -40,4 +40,18 @@ const castedNumber: CastListToImmutable<1, 1> = null as any;
 const castedObject: CastListToImmutable<{}, {}> = null as any;
 
 
-const rar3: S.Split<O.Paths<{ container: { field1: number } }>, 'container'> = null as any;
+// const rar3: S.Split<O.Paths<{ container: { field1: number } }>, 'container'> = null as any;
+
+const arra: string[] = [];
+const rar4: O.Path<{container: { subContainer: { field1: number }}}, ['container', 'subContainer']> = null as any;
+function rar5<P extends string[]>(path: P): O.Path<{container: { subContainer: { field1: number }}}, P> {
+    console.log(path);
+    return null as any;
+}
+rar5<['container', 'subContainer']>(['container', 'subContainer'])
+
+function rar6<P extends O.Paths<{container: {subContainer: {field1: number}}}>>(path: P): O.Path<{container: { subContainer: { field1: number }}}, P> {
+    console.log(path);
+    return null as any;
+}
+rar6(['container', 'subContainer', 'field1'])
