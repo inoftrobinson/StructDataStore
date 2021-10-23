@@ -12,6 +12,7 @@ import {
 } from "../../../types";
 import {navigateToAttrKeyPathIntoMapModelV2} from "../../../utils/fieldsNavigation";
 import {separateAttrKeyPath} from "../../../utils/attrKeyPaths";
+import {TypedAttrGetter} from "../../../models";
 
 
 export interface BaseItemsObjectStoreProps extends BaseObjectStoreProps {
@@ -64,12 +65,12 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     abstract getMultipleRecordItems(recordKeys: string[]): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }>;
 
     async getAttr<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>
+        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, queryKwargs?: { [argKey: string]: any }
     ): Promise<ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined> {
         const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
         if (dataWrapper != null) {
             if (relativeAttrKeyPath != null) {
-                return dataWrapper.getAttr(relativeAttrKeyPath);
+                return dataWrapper.getAttr(relativeAttrKeyPath, queryKwargs);
             } else {
                 return dataWrapper.RECORD_DATA as any;
             }
@@ -211,7 +212,8 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     }
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, value: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>
+        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P> | TypedAttrGetter<{ [recordKey: string]: T }, P>,
+        value: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
     async updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<{ [recordKey: string]: T }>>(
         attrKeyPath: P, value: O.Path<{ [recordKey: string]: T }, P>

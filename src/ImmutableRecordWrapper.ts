@@ -8,7 +8,12 @@ import {
     navigateToAttrKeyPathIntoMapModelV2,
     navigateToAttrKeyPathPartsIntoMapModel
 } from "./utils/fieldsNavigation";
-import {separateAttrKeyPath} from "./utils/attrKeyPaths";
+import {
+    separateAttrKeyPath,
+    separateAttrKeyPathWithQueryKwargs,
+    separatePotentialGetterWithQueryKwargs
+} from "./utils/attrKeyPaths";
+import {PrimitiveAttrGetter, TypedAttrGetter} from "./models";
 
 
 export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
@@ -120,28 +125,39 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
     /*const [alterSuccess, alteredRecordData, oldAttributeValue] = this.safeAlterRecordDataInPath(attrKeyPathElements, immutableValue);*/
 
     // getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): O.Path<T, S.Split<P, '.'>> {
-    getAttr(attrKeyPath: string | string[]): any {
-        const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
-        return this.RECORD_DATA.getIn(attrKeyPathElements);
+    getAttr(renderedAttrKeyPathParts: string[]): any {
+        return this.RECORD_DATA.getIn(renderedAttrKeyPathParts);
     }
 
     // getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): U.Merge<O.P.Pick<T, S.Split<P, ".">>> {
-    getMultipleAttrs(attrsKeyPaths: (string | string[])[]): { [attrKeyPath: string]: any } {
-        const retrievedValues: { [attrKeyPath: string]: any } = _.transform(attrsKeyPaths,
-            (output: {[p: string]: any}, attrKeyPath: string) => {
-                const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
-                output[attrKeyPath] = this.RECORD_DATA.getIn(attrKeyPathElements);
-            }, {}
+    getMultipleAttrs(getters: (string | PrimitiveAttrGetter)[]): { [attrKeyPath: string]: any };
+    getMultipleAttrs(getters: { [getterKey: string]: string | PrimitiveAttrGetter }): { [getterKey: string]: any } {
+        const retrievedValues: { [p: string]: any } = (
+            _.isArray(getters) ? _.transform(
+                getters, (output: { [renderedAttrKeyPath: string]: any }, getterItem: string | PrimitiveAttrGetter) => {
+                    const attrKeyPathElements: string[] = separatePotentialGetterWithQueryKwargs(getterItem);
+                    const renderedAttrKeyPath: string = attrKeyPathElements.join('.');
+                    output[renderedAttrKeyPath] = this.RECORD_DATA.getIn(attrKeyPathElements);
+                }, {}
+            ) : _.isPlainObject(getters) ? _.transform(
+                getters, (output: { [getterKey: string]: any }, getterItem: string | PrimitiveAttrGetter, getterKey: string) => {
+                    const attrKeyPathElements: string[] = separatePotentialGetterWithQueryKwargs(getterItem);
+                    output[getterKey] = this.RECORD_DATA.getIn(attrKeyPathElements);
+                }, {}
+            ) : (() => {
+                console.error('getters were not an array or an object, and could not be used.');
+                console.error(getters);
+                return {};
+            })()
         );
         return retrievedValues;
     }
 
     // updateAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>, value: any): O.Path<T, S.Split<P, '.'>> | undefined {
-    updateAttr(attrKeyPath: string | string[], value: any): any | undefined {
+    updateAttr(renderedAttrKeyPathParts: string[], value: any): any | undefined {
         const immutableValue: any = immutable.fromJS(value);
-        const attrKeyPathElements: string[] = _.isArray(attrKeyPath) ? attrKeyPath : separateAttrKeyPath(attrKeyPath);
-        const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
-        this.RECORD_DATA = this.RECORD_DATA.setIn(attrKeyPathElements, immutableValue);
+        const oldValue: any = this.RECORD_DATA.getIn(renderedAttrKeyPathParts);
+        this.RECORD_DATA = this.RECORD_DATA.setIn(renderedAttrKeyPathParts, immutableValue);
         return oldValue;
     }
 

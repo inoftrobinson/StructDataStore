@@ -11,7 +11,9 @@ import {
     ObjectOptionalFlattenedRecursiveMutators
 } from "../../types";
 import {navigateToAttrKeyPathIntoMapModelV2} from "../../utils/fieldsNavigation";
-import {BaseDataRetrievalPromiseResult} from "../../models";
+import {BaseDataRetrievalPromiseResult, TypedAttrGetter} from "../../models";
+import {separatePotentialGetterWithQueryKwargs} from "../../utils/attrKeyPaths";
+import {at} from "lodash";
 
 export type RetrieveDataCallablePromiseResult<T> = BaseDataRetrievalPromiseResult<T>;
 
@@ -70,30 +72,40 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return {subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    async getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined>;
-    async getAttr<P extends O.Paths<T>>(attrKeyPath: P): Promise<ImmutableCast<O.Path<T, P>> | undefined> {
+    async getAttr<P extends string>(
+        attrKeyPath: F.AutoPath<T, P> | TypedAttrGetter<T, P>
+    ): Promise<ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined> {
+    // async getAttr<P extends O.Paths<T>>(attrKeyPath: P, queryKwargs?: { [argKey: string]: any }): Promise<ImmutableCast<O.Path<T, P>> | undefined> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            return recordWrapper.getAttr(attrKeyPath);
+            const renderedAttrKeyPathParts: string[] = separatePotentialGetterWithQueryKwargs(attrKeyPath);
+            return recordWrapper.getAttr(renderedAttrKeyPathParts);
         }
         return undefined;
     }
 
-    async getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>> {
+    async getMultipleAttrs<P extends string>(
+        getters: (F.AutoPath<T, P> | TypedAttrGetter<T, P>)[]
+    ): Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>>;
+    async getMultipleAttrs<P extends string>(
+        getters: { [getterKey: string]: F.AutoPath<T, P> | TypedAttrGetter<T, P> }
+    ): Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            return recordWrapper.getMultipleAttrs(attrsKeyPaths) as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>;
+            return recordWrapper.getMultipleAttrs(getters) as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>;
         }
         return {} as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, '.'>>>>;
     }
 
     async updateAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P> | string[], value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+        attrKeyPath: F.AutoPath<T, P> | TypedAttrGetter<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = recordWrapper.updateAttr(attrKeyPath, value);
-            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
+            const renderedAttrKeyPathParts: string[] = separatePotentialGetterWithQueryKwargs(attrKeyPath);
+            // const renderedAttrKeyPath: string = renderedAttrKeyPathParts.join('.');
+            const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = recordWrapper.updateAttr(renderedAttrKeyPathParts, value);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(renderedAttrKeyPathParts);
             return {oldValue, subscribersPromise};
         }
         return {oldValue: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
@@ -112,13 +124,21 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     }
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P> | string[], value: O.Path<T, S.Split<P, ".">>
-    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }>;
-    async updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<T>>(
+        attrKeyPath: F.AutoPath<T, P> | TypedAttrGetter<T, P>, value: O.Path<T, S.Split<P, ".">>
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }> {
+    /*async updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<T>>(
         attrKeyPath: P, value: O.Path<T, P>
-    ): Promise<{ oldValue: ImmutableCast<O.Path<T, P>> | undefined, subscribersPromise: Promise<any> }> {
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, P>> | undefined, subscribersPromise: Promise<any> }> {*/
+        /*const renderedAttrKeyPathParts: string[] = separatePotentialGetterWithQueryKwargs(attrKeyPath);
+        const renderedAttrKeyPath: string = renderedAttrKeyPathParts.join('.');*/
+
+        // We directly use the non-rendered attrKeyPath (ether itself if the client has passed a keyPath,
+        // or the attrKeyPath property if the client passed an AttrGetter object), because the navigation
+        // into a field is not dependant upon having key placeholders path parts, or not.
+        // Hence we do not need to render the queryKwargs to the attrKeyPath.
+        const nonRenderedAttrKeyPath: F.AutoPath<T, P> = _.isPlainObject(attrKeyPath) ? (attrKeyPath as TypedAttrGetter<T, P>).attrKeyPath : attrKeyPath;
         const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = (
-            navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, attrKeyPath)
+            navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, nonRenderedAttrKeyPath)
         );
         if (matchingField != null) {
             const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(value);

@@ -8,6 +8,7 @@ import {
     ObjectFlattenedRecursiveMutatorsResults,
     ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast,
 } from "../../types";
+import {TypedAttrGetter} from "../../models";
 
 
 export interface BaseObjectStoreProps {
@@ -57,7 +58,9 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
         return {subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    abstract getAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined>;
+    abstract getAttr<P extends string>(
+        attrKeyPath: F.AutoPath<T, P>, queryKwarg: { [argKey: string]: any }
+    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined>;
 
     abstract getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): Promise<O.Optional<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>>>>;
 
@@ -84,18 +87,18 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
     }
 
     abstract updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
+        attrKeyPath: F.AutoPath<T, P> | TypedAttrGetter<T, P>, value: O.Path<T, S.Split<P, '.'>>,
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
-    abstract updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<T>>(
+    /*abstract updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<T>>(
         attrKeyPath: P, value: O.Path<T, P>
-    ): Promise<{ oldValue: ImmutableCast<O.Path<T, P>> | undefined, subscribersPromise: Promise<any> }>;
+    ): Promise<{ oldValue: ImmutableCast<O.Path<T, P>> | undefined, subscribersPromise: Promise<any> }>;*/
 
     async updateDataToAttr<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>, value: O.Path<T, S.Split<P, '.'>>
-    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined>;
-    async updateDataToAttr<P extends O.Paths<T>>(
+        attrKeyPath: F.AutoPath<T, P> | TypedAttrGetter<T, P>, value: O.Path<T, S.Split<P, '.'>>,
+    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
+    /*async updateDataToAttr<P extends O.Paths<T>>(
         attrKeyPath: P, value: O.Path<T, P>
-    ): Promise<ImmutableCast<O.Path<T, P>> | undefined> {
+    ): Promise<ImmutableCast<O.Path<T, P>> | undefined> {*/
         return (await this.updateDataToAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 

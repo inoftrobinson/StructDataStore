@@ -36,13 +36,12 @@ export default class SubscriptionsManager<T> {
         return subscriptionIndex;
     }
 
-    private makeAllAttributeKeyPathsCombinations(attrKeyPath: string | string[]): string[] {
-        const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
-        return _.map(attrKeyPathElements, ((__, pathElementIndex: number) => attrKeyPathElements.slice(0, pathElementIndex + 1).join('.')));
+    private makeAllAttributeKeyPathsCombinations(renderedAttrKeyPathParts: string[]): string[] {
+        return _.map(renderedAttrKeyPathParts, ((__, pathElementIndex: number) => renderedAttrKeyPathParts.slice(0, pathElementIndex + 1).join('.')));
     }
 
-    private innerSubscribeToAttrPathElements(attrKeyPath: string, callback: () => any, subscriberIndex: number): string[] {
-        const allAttributeKeyPathsCombinations = this.makeAllAttributeKeyPathsCombinations(attrKeyPath);
+    private innerSubscribeToAttrPathElements(renderedAttrKeyPathParts: string[], callback: () => any, subscriberIndex: number): string[] {
+        const allAttributeKeyPathsCombinations: string[] = this.makeAllAttributeKeyPathsCombinations(renderedAttrKeyPathParts);
         _.forEach(allAttributeKeyPathsCombinations, ((attrKeyPathItem: string) => {
             if (!_.hasIn(this.attrSubscribers, attrKeyPathItem)) {
                 this.attrSubscribers[attrKeyPathItem] = { [subscriberIndex]: callback };
@@ -56,19 +55,21 @@ export default class SubscriptionsManager<T> {
         return allAttributeKeyPathsCombinations;
     }
 
-    subscribeToAttr(attrKeyPath: string, callback: () => any): number {
+    subscribeToAttr(renderedAttrKeyPathParts: string[], callback: () => any): number {
         const subscriptionIndex: number = this.getNewSubscriptionIndex();
-        const subscribedKeyPaths: string[] = this.innerSubscribeToAttrPathElements(attrKeyPath, callback, subscriptionIndex);
+        const subscribedKeyPaths: string[] = this.innerSubscribeToAttrPathElements(
+            renderedAttrKeyPathParts, callback, subscriptionIndex
+        );
         this.subscriptionsIndexesToSubscribedKeyPaths[subscriptionIndex] = subscribedKeyPaths;
         // We keep track of all the attr keyPath's that our subscriber is subscribed into, in order to
         // remove be able to easily unsubscribe from all of them by just knowing the subscriberIndex.
         return subscriptionIndex;
     }
 
-    subscribeToMultipleAttrs(attrsKeyPaths: string[], callback: () => any): number {
+    subscribeToMultipleAttrs(renderedAttrKeyPathsParts: string[][], callback: () => any): number {
         const subscriptionIndex: number = this.getNewSubscriptionIndex();
-        const uniqueSubscribedKeyPaths: string[] = _.uniq(_.flatten(_.map(attrsKeyPaths, (attrKeyPathItem: string) => (
-            this.innerSubscribeToAttrPathElements(attrKeyPathItem, callback, subscriptionIndex)
+        const uniqueSubscribedKeyPaths: string[] = _.uniq(_.flatten(_.map(renderedAttrKeyPathsParts, (attrKeyPathPartsItem: string[]) => (
+            this.innerSubscribeToAttrPathElements(attrKeyPathPartsItem, callback, subscriptionIndex)
         ))));
         this.subscriptionsIndexesToSubscribedKeyPaths[subscriptionIndex] = uniqueSubscribedKeyPaths;
         return subscriptionIndex;
@@ -82,10 +83,10 @@ export default class SubscriptionsManager<T> {
         ]);
     }
 
-    async triggerSubscribersForAttr(attrKeyPath: string | string[]): Promise<void> {
+    async triggerSubscribersForAttr(renderedAttrKeyPathParts: string[]): Promise<void> {
         /* Trigger subscribers for specified attribute key path, its parent items, object wide and the parent field subscribers */
         const promises: Promise<any>[] = [];
-        const allAttributeKeyPathsCombinations: string[] = this.makeAllAttributeKeyPathsCombinations(attrKeyPath);
+        const allAttributeKeyPathsCombinations: string[] = this.makeAllAttributeKeyPathsCombinations(renderedAttrKeyPathParts);
         _.forEach(allAttributeKeyPathsCombinations, (attrKeyPathItem: string) => {
             const subscribersForAttr: { [subscriptionIndex: number]: () => any } | undefined = this.attrSubscribers[attrKeyPathItem];
             if (subscribersForAttr !== undefined) {
@@ -97,12 +98,13 @@ export default class SubscriptionsManager<T> {
         await Promise.all(promises);
     }
 
-    async triggerSubscribersForMultipleAttrs(attrsKeyPaths: string[]): Promise<void> {
+    async triggerSubscribersForMultipleAttrs(renderedAttrKeyPathsParts: string[][]): Promise<void> {
         /* Trigger subscribers for specified attributes keys paths and object wide */
         const promises: Promise<any>[] = [];
         const uniqueSubscriptionsCallbacksToCall: { [subscriptionIndex: number]: () => any } = {};
-        _.forEach(attrsKeyPaths, (attrKeyPath: string) => {
-            const subscribersForAttr: { [subscriptionIndex: number]: () => any } | undefined = this.attrSubscribers[attrKeyPath];
+        _.forEach(renderedAttrKeyPathsParts, (attrKeyPathPartsItem: string[]) => {
+            const renderedAttrKeyPathPartText: string = attrKeyPathPartsItem.join('.');  // todo: remove the need for a join here
+            const subscribersForAttr: { [subscriptionIndex: number]: () => any } | undefined = this.attrSubscribers[renderedAttrKeyPathPartText];
             if (subscribersForAttr !== undefined) {
                 _.forEach(subscribersForAttr, (callback: () => any, subscriptionIndex: any) => {
                     uniqueSubscriptionsCallbacksToCall[subscriptionIndex] = callback;
