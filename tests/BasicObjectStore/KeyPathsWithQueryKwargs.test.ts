@@ -16,7 +16,7 @@ function basicObjectStoreFactory<T>(objectModel: MapModel): BasicObjectStore<T> 
     });
 }
 
-describe('BasicObjectStore', () => {
+describe('KeyPathsWithQueryKwargs', () => {
     test('simple getAttr', async () => {
         interface StoreModel {
             container1: {
@@ -94,60 +94,48 @@ describe('BasicObjectStore', () => {
         expect(retrievedNewValue).toEqual("c1.f1.alteration2");
     });
 
-    test('simple updateMultipleAttrs', async () => {
+    test('getMultipleAttrs & updateMultipleAttrs', async () => {
         interface StoreModel {
-            container1: {
-                field1: string;
-                field2: string;
-            },
-            container2: {
-                field1: string;
-                field2: string;
-            }
+            items: { [itemKey: string]: {
+                field1: number;
+                field2: number;
+            } };
         }
         const store = basicObjectStoreFactory<StoreModel>(
             new MapModel({fields: {
-                'container1': new MapModel({fields: {
-                    'field1': new BasicFieldModel({}),
-                    'field2': new BasicFieldModel({})
-                }}),
-                'container2': new MapModel({fields: {
-                    'field1': new BasicFieldModel({}),
-                    'field2': new BasicFieldModel({})
-                }}),
+                'items': new TypedDictFieldModel({
+                    keyName: 'itemKey', keyType: 'string',
+                    itemType: new MapModel({fields: {
+                        'field1': new BasicFieldModel({}),
+                        'field2': new BasicFieldModel({})
+                    }}),
+                })
             }})
         );
-        store.loadFromData({
-            'container1': {'field1': "c1.f1.alteration1", 'field2': "c1.f2.alteration1"},
-            'container2': {'field1': "c2.f1.alteration1", 'field2': "c2.f2.alteration1"},
-        });
-        /*
-        {
-            'container1.field1'?: string,
-            'container1.field2'?: string,
-            'container2.field1'?: string,
-        } | undefined
-         */
+        store.loadFromData({'items': {
+            'item1': {'field1': "i1.f1.alteration1", 'field2': "i1.f2.alteration1"},
+            'item2': {'field1': "i2.f1.alteration1", 'field1': "i2.f2.alteration1"}
+        }});
 
         const oldFieldsValues = await store.updateMultipleAttrs({
-            'container1.field1': "c1.f1.alteration2",
-            'container1.field2': "c1.f2.alteration2",
-            'container2.field1': "c2.f1.alteration2"
+            'items.item1.field1': "i1.f1.alteration2",
+            'items.item1.field2': "i1.f2.alteration2",
+            'items.item2.field1': "i2.f1.alteration2"
         });
         expect(oldFieldsValues).toEqual({
-            'container1.field1': "c1.f1.alteration1",
-            'container1.field2': "c1.f2.alteration1",
-            'container2.field1': "c2.f1.alteration1",
+            'items.item1.field1': "i1.f1.alteration1",
+            'items.item1.field2': "i1.f2.alteration1",
+            'items.item2.field1': "i2.f1.alteration1",
         });
 
         const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([
-            'container1.field1', 'container1.field2', 'container2.field1', 'container2.field2'
+            'items.item1.field1', 'items.item1.field2', 'items.item2.field1', 'items.item2.field2'
         ]);
         expect(retrievedFieldsValuesAfterUpdate).toEqual({
-            'container1.field1': "c1.f1.alteration2",
-            'container1.field2': "c1.f2.alteration2",
-            'container2.field1': "c2.f1.alteration2",
-            'container2.field2': "c2.f2.alteration1",
+            'items.item1.field1': "c1.f1.alteration2",
+            'items.item1.field2': "c1.f2.alteration2",
+            'items.item2.field1': "c2.f1.alteration2",
+            'items.item2.field2': "c2.f2.alteration1",
         });
     });
 
@@ -283,91 +271,6 @@ describe('BasicObjectStore', () => {
         });
     });
 
-    test('listeners sharing', async () => {
-        interface StoreModel {
-            container1: {
-                field1: string;
-                field2: string;
-            },
-            container2: {
-                field1: string;
-            }
-        }
-        const store = basicObjectStoreFactory<StoreModel>(
-            new MapModel({fields: {
-                'container1': new MapModel({fields: {
-                    'field1': new BasicFieldModel({}),
-                    'field2': new BasicFieldModel({}),
-                }}),
-                'container2': new MapModel({fields: {
-                    'field1': new BasicFieldModel({}),
-                }})
-            }})
-        );
-        store.loadFromData({
-            'container1': {'field1': "c1.f1.alteration1", 'field2': "c1.f2.alteration1"},
-            'container2': {'field1': "c2.f1.alteration1"}
-        });
-
-        let listenersTriggersCounter: number = 0;
-        store.subscribeMultipleAttrs(
-            ['container1.field1', 'container1.field2', 'container2.field1'],
-            () => {
-                listenersTriggersCounter += 1;
-            }
-        );
-        await store.updateMultipleAttrs({
-            'container1.field1': "c1.f1.alteration2",
-            'container1.field2': "c1.f2.alteration2",
-            'container2.field1': "c2.f1.alteration2",
-        });
-        expect(listenersTriggersCounter).toEqual(1);
-    });
-
-    test('listeners separation', async () => {
-        interface StoreModel {
-            container1: {
-                field1: string;
-                field2: string;
-            },
-            container2: {
-                field1: string;
-            }
-        }
-        const store = basicObjectStoreFactory<StoreModel>(
-            new MapModel({fields: {
-                'container1': new MapModel({fields: {
-                    'field1': new BasicFieldModel({}),
-                    'field2': new BasicFieldModel({}),
-                }}),
-                'container2': new MapModel({fields: {
-                    'field1': new BasicFieldModel({}),
-                }})
-            }})
-        );
-        store.loadFromData({
-            'container1': {'field1': "c1.f1.alteration1", 'field2': "c1.f2.alteration1"},
-            'container2': {'field1': "c2.f1.alteration1"}
-        });
-
-        let listenersTriggersCounter: number = 0;
-        store.subscribeToAttr('container1.field1',() => {
-            listenersTriggersCounter += 1;
-        });
-        store.subscribeToAttr('container1.field2',() => {
-            listenersTriggersCounter += 1;
-        });
-        store.subscribeToAttr('container2.field1',() => {
-            listenersTriggersCounter += 1;
-        });
-        await store.updateMultipleAttrs({
-            'container1.field1': "c1.f1.alteration2",
-            'container1.field2': "c1.f2.alteration2",
-            'container2.field1': "c2.f1.alteration2",
-        });
-        expect(listenersTriggersCounter).toEqual(3);
-    });
-
     test('simple updateDataToAttr', async () => {
         interface StoreModel {
             container1: {
@@ -421,7 +324,7 @@ describe('BasicObjectStore', () => {
 
     test('typedDict updateDataToAttr', async () => {
         interface StoreModel {
-            items: { [itemKey: string]: string }
+            items: { [itemKey: string]: string };
         }
         const store = basicObjectStoreFactory<StoreModel>(
             new MapModel({fields: {

@@ -121,23 +121,16 @@ describe('BasicObjectStore', () => {
             'container1': {'field1': "c1.f1.alteration1", 'field2': "c1.f2.alteration1"},
             'container2': {'field1': "c2.f1.alteration1", 'field2': "c2.f2.alteration1"},
         });
-        /*
-        {
-            'container1.field1'?: string,
-            'container1.field2'?: string,
-            'container2.field1'?: string,
-        } | undefined
-         */
 
         const oldFieldsValues = await store.updateMultipleAttrs({
-            'container1.field1': "c1.f1.alteration2",
-            'container1.field2': "c1.f2.alteration2",
-            'container2.field1': "c2.f1.alteration2"
+            'setter1': {attrKeyPath: 'container1.field1', valueToSet: "c1.f1.alteration2"},
+            'setter2': {attrKeyPath: 'container1.field2', valueToSet: "c1.f2.alteration2"},
+            'setter3': {attrKeyPath: 'container2.field1', valueToSet: "c2.f1.alteration2"}
         });
         expect(oldFieldsValues).toEqual({
-            'container1.field1': "c1.f1.alteration1",
-            'container1.field2': "c1.f2.alteration1",
-            'container2.field1': "c2.f1.alteration1",
+            'setter1': "c1.f1.alteration1",
+            'setter2': "c1.f2.alteration1",
+            'setter3': "c2.f1.alteration1",
         });
 
         const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([

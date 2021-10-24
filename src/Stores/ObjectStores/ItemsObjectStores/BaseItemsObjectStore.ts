@@ -11,8 +11,8 @@ import {
     ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast
 } from "../../../types";
 import {navigateToAttrKeyPathIntoMapModelV2} from "../../../utils/fieldsNavigation";
-import {separateAttrKeyPath} from "../../../utils/attrKeyPaths";
-import {TypedAttrGetter} from "../../../models";
+import {separateAttrKeyPath, separateAttrKeyPathWithQueryKwargs} from "../../../utils/attrKeyPaths";
+import {TypedAttrGetter, TypedSetterItem} from "../../../models";
 
 
 export interface BaseItemsObjectStoreProps extends BaseObjectStoreProps {
@@ -184,6 +184,43 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         recordKey: string, attrKeyPath: F.AutoPath<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
     ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
         return await this.updateAttr<P>(`${recordKey}.${attrKeyPath}` as any, value as any);
+    }
+
+    async updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
+        setters: { [setterKey: string]: TypedSetterItem<{ [recordKey: string]: T }, P> }
+    ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }> {
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            const renderedAttrKeyPathsToSetterKeys: { [renderedAttrKeyPath: string]: string } = {};
+            const mutatorsRenderedAttrKeyPathsParts: string[][] = [];
+            const renderedMutators: { [renderedAttrKeyPath: string]: any } = _.transform(
+                setters, (output: { [renderedAttrKeyPath: string]: any }, setterItem: TypedSetterItem<T, P>, setterKey: string) => {
+                    const renderedAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(setterItem.attrKeyPath, setterItem.queryKwargs);
+                    const renderedAttrKeyPath: string = renderedAttrKeyPathParts.join('.');
+                    renderedAttrKeyPathsToSetterKeys[renderedAttrKeyPath] = setterKey;
+                    output[renderedAttrKeyPath] = setterItem.valueToSet;
+                    mutatorsRenderedAttrKeyPathsParts.push(renderedAttrKeyPathParts);
+                }, {}
+            );
+            const oldValues: { [renderedAttrKeyPath: string]: any } = recordWrapper.updateMultipleAttrs(renderedMutators);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(mutatorsRenderedAttrKeyPathsParts);
+            const oldValuesBySettersKeys: { [setterKey: string]: any } = _.transform(
+                oldValues, (output: { [setterKey: string]: any }, oldValue: any, renderedAttrKeyPath: string) => {
+                    const matchingSetterKey: string | undefined = renderedAttrKeyPathsToSetterKeys[renderedAttrKeyPath];
+                    if (matchingSetterKey !== undefined) {
+                        output[matchingSetterKey] = oldValue;
+                    } else {
+                        console.error(`
+No matching setter key was found for oldValue of attr at path '${renderedAttrKeyPath}'.
+This old value has not been added to the result of the updateMultipleAttrs operation.
+This can cause the type inferring to be invalid and some setterKey's to be missing from the result.
+                        `);
+                    }
+                }, {}
+            );
+            return {oldValues: oldValuesBySettersKeys, subscribersPromise};
+        }
+        return {oldValues: undefined as any, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
     async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<{ [recordKey: string]: T }>>(

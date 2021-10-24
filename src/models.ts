@@ -1,5 +1,6 @@
 import * as immutable from 'immutable';
-import {F} from 'ts-toolbelt';
+import {F, O, A, S} from 'ts-toolbelt';
+
 
 export interface CreateUpdateRecordResponse<T extends { [p: string]: any }> {
     success: boolean;
@@ -22,4 +23,16 @@ export interface PrimitiveAttrGetter {
 export interface TypedAttrGetter<T extends { [p: string]: any }, P extends string> {
     attrKeyPath: F.AutoPath<T, P>;
     queryKwargs?: { [argKey: string]: any };
+}
+
+export interface TypedSetterItem<T extends { [p: string]: any }, P extends string> {
+    attrKeyPath: F.AutoPath<T, P>;
+    queryKwargs?: { [argKey: string]: any };
+    valueToSet: O.Path<T, S.Split<P, '.'>>;
+}
+
+export interface InternalTypedSetterItem<T extends { [p: string]: any }, P extends string> {
+    attrKeyPath: F.AutoPath<T, P>;
+    queryKwargs?: { [argKey: string]: any };
+    valueToSet: O.Path<T, S.Split<P, '.'>>;
 }

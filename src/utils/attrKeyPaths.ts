@@ -8,6 +8,7 @@ export function separateAttrKeyPath(attrKeyPath: string | string[]): string[] {
     // 'container.fieldOne' becomes ['container', 'fieldOne'])
 }
 
+// todo: rename to render attrKeyPathWithQueryKwargs
 export function separateAttrKeyPathWithQueryKwargs(attrKeyPath: string | string[], queryKwargs?: { [argKey: string]: any }): string[] {
     const attrKeyPathParts: string[] = separateAttrKeyPath(attrKeyPath);
     const processedAttrKeyPathParts: string[] = _.map(attrKeyPathParts, (pathPart: string) => {
@@ -27,6 +28,10 @@ export function separateAttrKeyPathWithQueryKwargs(attrKeyPath: string | string[
         }
     });
     return processedAttrKeyPathParts;
+}
+
+export function renderAttrKeyPathWithQueryKwargs(attrKeyPath: string, queryKwargs?: { [argKey: string]: any }): string {
+    return separateAttrKeyPathWithQueryKwargs(attrKeyPath, queryKwargs).join('.');
 }
 
 export function separatePotentialGetterWithQueryKwargs(attrKeyPath: string | PrimitiveAttrGetter): string[] {

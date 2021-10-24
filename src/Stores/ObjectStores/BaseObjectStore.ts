@@ -8,7 +8,7 @@ import {
     ObjectFlattenedRecursiveMutatorsResults,
     ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast,
 } from "../../types";
-import {TypedAttrGetter} from "../../models";
+import {TypedAttrGetter, TypedSetterItem} from "../../models";
 
 
 export interface BaseObjectStoreProps {
@@ -74,16 +74,22 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
         return (await this.updateAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 
-    abstract updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+    /*abstract updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
-    ): Promise<{ oldValues: any | undefined, subscribersPromise: Promise<any> }>;
+    ): Promise<{ oldValues: any | undefined, subscribersPromise: Promise<any> }>;*/
     // ObjectFlattenedRecursiveMutatorsResults<any, any>
+    abstract updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
+        setters: { [setterKey: string]: TypedSetterItem<T, P> }
+    ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }>;
 
-    async updateMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+    /*async updateMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
-    ): Promise<any | undefined> {
+    ): Promise<any | undefined> {*/
+    async updateMultipleAttrs<P extends string>(
+        setters: { [setterKey: string]: TypedSetterItem<T, P> }
+    ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }> {
         // ObjectFlattenedRecursiveMutatorsResults<any, any>
-        return (await this.updateMultipleAttrsWithReturnedSubscribersPromise(mutators)).oldValues;
+        return (await this.updateMultipleAttrsWithReturnedSubscribersPromise(setters)).oldValues;
     }
 
     abstract updateDataToAttrWithReturnedSubscribersPromise<P extends string>(

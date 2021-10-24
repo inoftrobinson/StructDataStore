@@ -11,8 +11,12 @@ import {
     ObjectOptionalFlattenedRecursiveMutators
 } from "../../types";
 import {navigateToAttrKeyPathIntoMapModelV2} from "../../utils/fieldsNavigation";
-import {BaseDataRetrievalPromiseResult, TypedAttrGetter} from "../../models";
-import {separatePotentialGetterWithQueryKwargs} from "../../utils/attrKeyPaths";
+import {BaseDataRetrievalPromiseResult, TypedAttrGetter, TypedSetterItem} from "../../models";
+import {
+    renderAttrKeyPathWithQueryKwargs,
+    separateAttrKeyPathWithQueryKwargs,
+    separatePotentialGetterWithQueryKwargs
+} from "../../utils/attrKeyPaths";
 import {at} from "lodash";
 
 export type RetrieveDataCallablePromiseResult<T> = BaseDataRetrievalPromiseResult<T>;
@@ -111,7 +115,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return {oldValue: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
+    /*async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined, subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
@@ -119,6 +123,43 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
             const oldValues: { [attrKeyPath: string]: any } = recordWrapper.updateMultipleAttrs(mutators);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(Object.keys(mutators));
             return {oldValues: oldValues as ObjectFlattenedRecursiveMutatorsResults<T, M>, subscribersPromise};
+        }
+        return {oldValues: undefined as any, subscribersPromise: new Promise<void>(resolve => resolve())};
+    }*/
+
+    async updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
+        setters: { [setterKey: string]: TypedSetterItem<T, P> }
+    ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }> {
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        if (recordWrapper != null) {
+            const renderedAttrKeyPathsToSetterKeys: { [renderedAttrKeyPath: string]: string } = {};
+            const mutatorsRenderedAttrKeyPathsParts: string[][] = [];
+            const renderedMutators: { [renderedAttrKeyPath: string]: any } = _.transform(
+                setters, (output: { [renderedAttrKeyPath: string]: any }, setterItem: TypedSetterItem<T, P>, setterKey: string) => {
+                    const renderedAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(setterItem.attrKeyPath, setterItem.queryKwargs);
+                    const renderedAttrKeyPath: string = renderedAttrKeyPathParts.join('.');
+                    renderedAttrKeyPathsToSetterKeys[renderedAttrKeyPath] = setterKey;
+                    output[renderedAttrKeyPath] = setterItem.valueToSet;
+                    mutatorsRenderedAttrKeyPathsParts.push(renderedAttrKeyPathParts);
+                }, {}
+            );
+            const oldValues: { [renderedAttrKeyPath: string]: any } = recordWrapper.updateMultipleAttrs(renderedMutators);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(mutatorsRenderedAttrKeyPathsParts);
+            const oldValuesBySettersKeys: { [setterKey: string]: any } = _.transform(
+                oldValues, (output: { [setterKey: string]: any }, oldValue: any, renderedAttrKeyPath: string) => {
+                    const matchingSetterKey: string | undefined = renderedAttrKeyPathsToSetterKeys[renderedAttrKeyPath];
+                    if (matchingSetterKey !== undefined) {
+                        output[matchingSetterKey] = oldValue;
+                    } else {
+                        console.error(`
+No matching setter key was found for oldValue of attr at path '${renderedAttrKeyPath}'.
+This old value has not been added to the result of the updateMultipleAttrs operation.
+This can cause the type inferring to be invalid and some setterKey's to be missing from the result.
+                        `);
+                    }
+                }, {}
+            );
+            return {oldValues: oldValuesBySettersKeys, subscribersPromise};
         }
         return {oldValues: undefined as any, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
