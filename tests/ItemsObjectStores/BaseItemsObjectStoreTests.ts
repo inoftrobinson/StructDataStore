@@ -6,6 +6,7 @@ import {
     MapModel,
     TypedDictFieldModel
 } from "../../src";
+import {attempt} from "lodash";
 
 
 // export default (storeClass: typeof BasicItemsObjectStore | typeof SectionedItemsObjectStore) => {
@@ -121,14 +122,14 @@ export async function simpleUpdateMultipleAttrs(storeFactory: StoreFactory) {
         }
     });
     const oldFieldsValues = await store.updateMultipleAttrs({
-        'record1.container1.field1': "c1.f1.alteration2",
-        'record1.container1.field2': "c1.f2.alteration2",
-        'record1.container2.field1': "c2.f1.alteration2"
+        'setter1': {attrKeyPath: 'record1.container1.field1', valueToSet: "c1.f1.alteration2"},
+        'setter2': {attrKeyPath: 'record1.container1.field2', valueToSet: "c1.f2.alteration2"},
+        'setter3': {attrKeyPath: 'record1.container2.field1', valueToSet: "c2.f1.alteration2"}
     });
     expect(oldFieldsValues).toEqual({
-        'record1.container1.field1': "c1.f1.alteration1",
-        'record1.container1.field2': "c1.f2.alteration1",
-        'record1.container2.field1': "c2.f1.alteration1",
+        'setter1': "c1.f1.alteration1",
+        'setter2': "c1.f2.alteration1",
+        'setter3': "c2.f1.alteration1",
     });
 
     const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([
@@ -314,9 +315,9 @@ export async function listenersSharing(storeFactory: StoreFactory) {
         }
     );
     await store.updateMultipleAttrs({
-        'record1.container1.field1': "c1.f1.alteration2",
-        'record1.container1.field2': "c1.f2.alteration2",
-        'record1.container2.field1': "c2.f1.alteration2",
+        'setter1': {attrKeyPath: 'record1.container1.field1', valueToSet: "c1.f1.alteration2"},
+        'setter2': {attrKeyPath: 'record1.container1.field2', valueToSet: "c1.f2.alteration2"},
+        'setter3': {attrKeyPath: 'record1.container2.field1', valueToSet: "c2.f1.alteration2"},
     });
     expect(listenersTriggersCounter).toEqual(1);
 }
@@ -360,9 +361,9 @@ export async function listenersSeparation(storeFactory: StoreFactory) {
         listenersTriggersCounter += 1;
     });
     await store.updateMultipleAttrs({
-        'record1.container1.field1': "c1.f1.alteration2",
-        'record1.container1.field2': "c1.f2.alteration2",
-        'record1.container2.field1': "c2.f1.alteration2",
+        'setter1': {attrKeyPath: 'record1.container1.field1', valueToSet: "c1.f1.alteration2"},
+        'setter2': {attrKeyPath: 'record1.container1.field2', valueToSet: "c1.f2.alteration2"},
+        'setter3': {attrKeyPath: 'record1.container2.field1', valueToSet: "c2.f1.alteration2"},
     });
     expect(listenersTriggersCounter).toEqual(3);
 }

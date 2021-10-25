@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
-import ImmutableRecordWrapper from "../../../ImmutableRecordWrapper";
+import SingleImmutableRecordWrapper from "../../../ImmutableRecordWrappers/SingleImmutableRecordWrapper";
 import {BaseItemsObjectStore, BaseItemsObjectStoreProps} from "./BaseItemsObjectStore";
 import {BaseDataRetrievalPromiseResult} from "../../../models";
 
@@ -15,8 +15,8 @@ export interface SectionedItemsObjectStoreProps<T> extends BaseItemsObjectStoreP
 }
 
 export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends BaseItemsObjectStore<T> {
-    public RECORD_WRAPPERS: { [key: string]: ImmutableRecordWrapper<T> };
-    private readonly pendingKeyItemsRetrievalPromises: { [key: string]: Promise<ImmutableRecordWrapper<T> | null> };
+    public RECORD_WRAPPERS: { [key: string]: SingleImmutableRecordWrapper<T> };
+    private readonly pendingKeyItemsRetrievalPromises: { [key: string]: Promise<SingleImmutableRecordWrapper<T> | null> };
 
     constructor(public readonly props: SectionedItemsObjectStoreProps<T>) {
         super(props);
@@ -35,23 +35,23 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
     ): Promise<{ oldValue: immutable.RecordOf<T> | null, subscribersPromise: Promise<any> }> {
         // Item update without having previously loaded the said item is allowed
         const oldValue: immutable.RecordOf<T> | null = this.RECORD_WRAPPERS[itemKey]?.RECORD_DATA;
-        this.RECORD_WRAPPERS[itemKey] = new ImmutableRecordWrapper<T>(itemData, this.props.itemModel);
+        this.RECORD_WRAPPERS[itemKey] = new SingleImmutableRecordWrapper<T>(itemData, this.props.itemModel);
         const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(itemKey);
         return {oldValue, subscribersPromise};
     }
 
-    retrieveAndCacheRecordItem(recordKey: string): Promise<ImmutableRecordWrapper<T> | null>  {
-        const existingPendingPromise: Promise<ImmutableRecordWrapper<T> | null> | undefined = this.pendingKeyItemsRetrievalPromises[recordKey];
+    retrieveAndCacheRecordItem(recordKey: string): Promise<SingleImmutableRecordWrapper<T> | null>  {
+        const existingPendingPromise: Promise<SingleImmutableRecordWrapper<T> | null> | undefined = this.pendingKeyItemsRetrievalPromises[recordKey];
         if (existingPendingPromise !== undefined) {
             return existingPendingPromise;
         } else {
             if (this.props.retrieveSingleItemCallable !== undefined) {
-                const retrievalPromise: Promise<ImmutableRecordWrapper<T> | null> = (
+                const retrievalPromise: Promise<SingleImmutableRecordWrapper<T> | null> = (
                     this.props.retrieveSingleItemCallable(recordKey).then((result: RetrieveSingleItemCallablePromiseResult<T>) => {
                         const {success, data, metadata}: RetrieveSingleItemCallablePromiseResult<T> = result;
                         delete this.pendingKeyItemsRetrievalPromises[recordKey];
                         if (success && data != null) {
-                            const recordWrapper: ImmutableRecordWrapper<T> | null = this.makeRecordWrapperFromData(recordKey, data);
+                            const recordWrapper: SingleImmutableRecordWrapper<T> | null = this.makeRecordWrapperFromData(recordKey, data);
                             if (recordWrapper != null) {
                                 this.RECORD_WRAPPERS[recordKey] = recordWrapper;
                                 this.triggerSubscribers();
@@ -73,21 +73,21 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
             } else {
                 console.error('retrieveMultipleItemsCallable or retrieveItemCallable must be defined');
             }
-            return new Promise<ImmutableRecordWrapper<T> | null>(resolve => resolve(null));
+            return new Promise<SingleImmutableRecordWrapper<T> | null>(resolve => resolve(null));
         }
     }
 
-    async getSingleRecordItem(key: string): Promise<ImmutableRecordWrapper<T> | null> {
+    async getSingleRecordItem(key: string): Promise<SingleImmutableRecordWrapper<T> | null> {
         return this.RECORD_WRAPPERS[key] !== undefined ? this.RECORD_WRAPPERS[key] : this.retrieveAndCacheRecordItem(key);
     }
 
-    async retrieveAndCacheMultipleRecordItems(recordKeys: string[]): Promise<{ [key: string]: ImmutableRecordWrapper<T> | null }>  {
+    async retrieveAndCacheMultipleRecordItems(recordKeys: string[]): Promise<{ [key: string]: SingleImmutableRecordWrapper<T> | null }>  {
         const keysRequiringRetrieval: string[] = [];
-        const keysPromises: Promise<{ key: string, record: ImmutableRecordWrapper<T> | null }>[] = [];
+        const keysPromises: Promise<{ key: string, record: SingleImmutableRecordWrapper<T> | null }>[] = [];
         recordKeys.forEach((key: string) => {
-            const existingKeyPendingPromise: Promise<ImmutableRecordWrapper<T> | null> | undefined = this.pendingKeyItemsRetrievalPromises[key];
+            const existingKeyPendingPromise: Promise<SingleImmutableRecordWrapper<T> | null> | undefined = this.pendingKeyItemsRetrievalPromises[key];
             if (existingKeyPendingPromise !== undefined) {
-                keysPromises.push(existingKeyPendingPromise.then((record: ImmutableRecordWrapper<T> | null) => ({key, record})));
+                keysPromises.push(existingKeyPendingPromise.then((record: SingleImmutableRecordWrapper<T> | null) => ({key, record})));
             } else {
                 keysRequiringRetrieval.push(key);
             }
@@ -96,7 +96,7 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
             if (this.props.retrieveMultipleItemsCallable !== undefined) {
                 const baseMultiItemsRetrievalPromise = this.props.retrieveMultipleItemsCallable(keysRequiringRetrieval);
                 keysRequiringRetrieval.forEach((recordKey: string) => {
-                    const keyItemRetrievalPromise: Promise<ImmutableRecordWrapper<T> | null> = (
+                    const keyItemRetrievalPromise: Promise<SingleImmutableRecordWrapper<T> | null> = (
                         baseMultiItemsRetrievalPromise.then((result: RetrieveMultipleItemsCallablePromiseResult<T>) => {
                             const {success, data, metadata}: RetrieveMultipleItemsCallablePromiseResult<T> = result;
                             delete this.pendingKeyItemsRetrievalPromises[recordKey];
@@ -104,7 +104,7 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
                                 const itemsDataContainer: { [itemKey: string]: { [attrKey: string]: any } } = data;
                                 const itemData: { [attrKey: string]: any } | undefined = itemsDataContainer[recordKey];
                                 if (itemData !== undefined) {
-                                    const recordWrapper: ImmutableRecordWrapper<T> | null = (
+                                    const recordWrapper: SingleImmutableRecordWrapper<T> | null = (
                                         this.makeRecordWrapperFromData(recordKey, itemData as T)
                                     );
                                     if (recordWrapper != null) {
@@ -122,7 +122,7 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
                         })
                     );
                     this.pendingKeyItemsRetrievalPromises[recordKey] = keyItemRetrievalPromise;
-                    keysPromises.push(keyItemRetrievalPromise.then((record: ImmutableRecordWrapper<T> | null) => ({key: recordKey, record})));
+                    keysPromises.push(keyItemRetrievalPromise.then((record: SingleImmutableRecordWrapper<T> | null) => ({key: recordKey, record})));
                 });
             } else if (this.props.retrieveSingleItemCallable !== undefined) {
                 // todo: if retrieveMultipleItemsCallable is not defined, use the retrieveItemCallable
@@ -131,18 +131,18 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
                 console.error('retrieveMultipleItemsCallable or retrieveItemCallable must be defined');
             }
         }
-        const keysContainers: { key: string, record: ImmutableRecordWrapper<T> | null }[] = await Promise.all(keysPromises);
+        const keysContainers: { key: string, record: SingleImmutableRecordWrapper<T> | null }[] = await Promise.all(keysPromises);
         this.triggerSubscribers();
-        return _.transform(keysContainers, (result: { [key: string]: any }, container: { key: string, record: ImmutableRecordWrapper<T> | null }) => {
+        return _.transform(keysContainers, (result: { [key: string]: any }, container: { key: string, record: SingleImmutableRecordWrapper<T> | null }) => {
             result[container.key] = container.record;
         }, {});
     }
 
-    async getMultipleRecordItems(recordKeys: string[]): Promise<{ [key: string]: ImmutableRecordWrapper<T> | null }> {
+    async getMultipleRecordItems(recordKeys: string[]): Promise<{ [key: string]: SingleImmutableRecordWrapper<T> | null }> {
         const keysRequiringRetrieval: string[] = [];
-        const existingItemsDataWrappers: { [key: string]: ImmutableRecordWrapper<T> } = {};
+        const existingItemsDataWrappers: { [key: string]: SingleImmutableRecordWrapper<T> } = {};
         recordKeys.forEach((key: string) => {
-            const existingRecordDataWrapper: ImmutableRecordWrapper<T> | undefined = this.RECORD_WRAPPERS[key];
+            const existingRecordDataWrapper: SingleImmutableRecordWrapper<T> | undefined = this.RECORD_WRAPPERS[key];
             if (existingRecordDataWrapper !== undefined) {
                 existingItemsDataWrappers[key] = existingRecordDataWrapper;
             } else {
@@ -150,7 +150,7 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
             }
         });
         if (keysRequiringRetrieval.length > 0) {
-            const retrievedRecordsItems: { [key: string]: ImmutableRecordWrapper<T> | null} = (
+            const retrievedRecordsItems: { [key: string]: SingleImmutableRecordWrapper<T> | null} = (
                 await this.retrieveAndCacheMultipleRecordItems(keysRequiringRetrieval)
             );
             return {...existingItemsDataWrappers, ...retrievedRecordsItems};

@@ -4,7 +4,7 @@ import {F, O, S, U} from 'ts-toolbelt';
 import {BaseObjectStore, BaseObjectStoreProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
 import {BasicFieldModel, MapModel, TypedDictFieldModel} from "../../ModelsFields";
-import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
+import SingleImmutableRecordWrapper from "../../ImmutableRecordWrappers/SingleImmutableRecordWrapper";
 import {
     ImmutableCast,
     ObjectFlattenedRecursiveMutatorsResults,
@@ -30,24 +30,24 @@ export interface BasicObjectStoreProps<T> extends BaseObjectStoreProps {
 export
 // @ts-ignore
 class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T> {
-    public RECORD_WRAPPER?: ImmutableRecordWrapper<T>;
-    private pendingRetrievalPromise?: Promise<ImmutableRecordWrapper<T> | null>;
+    public RECORD_WRAPPER?: SingleImmutableRecordWrapper<T>;
+    private pendingRetrievalPromise?: Promise<SingleImmutableRecordWrapper<T> | null>;
 
     constructor(public readonly props: BasicObjectStoreProps<T>) {
         super(props);
     }
 
-    retrieveAndCacheData(): Promise<ImmutableRecordWrapper<T> | null>  {
+    retrieveAndCacheData(): Promise<SingleImmutableRecordWrapper<T> | null>  {
         if (this.pendingRetrievalPromise !== undefined) {
             return this.pendingRetrievalPromise;
         } else {
-            const retrievalPromise: Promise<ImmutableRecordWrapper<T> | null> = this.props.retrieveDataCallable().then((result: RetrieveDataCallablePromiseResult<T>) => {
+            const retrievalPromise: Promise<SingleImmutableRecordWrapper<T> | null> = this.props.retrieveDataCallable().then((result: RetrieveDataCallablePromiseResult<T>) => {
                 this.pendingRetrievalPromise = undefined;
                 if (result.success) {
                     const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(
                         result.data, this.props.objectModel
                     ) as immutable.RecordOf<T>;
-                    this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
+                    this.RECORD_WRAPPER = new SingleImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
                     this.triggerSubscribers();
                     return this.RECORD_WRAPPER;
                 } else {
@@ -60,7 +60,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         }
     }
 
-    async getRecordWrapper(): Promise<ImmutableRecordWrapper<T> | null> {
+    async getRecordWrapper(): Promise<SingleImmutableRecordWrapper<T> | null> {
         return this.RECORD_WRAPPER !== undefined ? this.RECORD_WRAPPER : this.retrieveAndCacheData();
     }
 
@@ -69,7 +69,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
             parsedData, this.props.objectModel
         ) as immutable.RecordOf<T>;
         if (recordItem != null) {
-            this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
+            this.RECORD_WRAPPER = new SingleImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
             const subscribersPromise: Promise<any> = this.triggerSubscribers();
             return {subscribersPromise};
         }
@@ -80,7 +80,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         attrKeyPath: F.AutoPath<T, P> | TypedAttrGetter<T, P>
     ): Promise<ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined> {
     // async getAttr<P extends O.Paths<T>>(attrKeyPath: P, queryKwargs?: { [argKey: string]: any }): Promise<ImmutableCast<O.Path<T, P>> | undefined> {
-        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const renderedAttrKeyPathParts: string[] = separatePotentialGetterWithQueryKwargs(attrKeyPath);
             return recordWrapper.getAttr(renderedAttrKeyPathParts);
@@ -94,7 +94,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     async getMultipleAttrs<P extends string>(
         getters: { [getterKey: string]: F.AutoPath<T, P> | TypedAttrGetter<T, P> }
     ): Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>> {
-        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             return recordWrapper.getMultipleAttrs(getters) as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>;
         }
@@ -104,7 +104,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     async updateAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P> | TypedAttrGetter<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
-        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const renderedAttrKeyPathParts: string[] = separatePotentialGetterWithQueryKwargs(attrKeyPath);
             // const renderedAttrKeyPath: string = renderedAttrKeyPathParts.join('.');
@@ -118,7 +118,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     /*async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined, subscribersPromise: Promise<any> }> {
-        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const oldValues: { [attrKeyPath: string]: any } = recordWrapper.updateMultipleAttrs(mutators);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(Object.keys(mutators));
@@ -130,7 +130,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     async updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         setters: { [setterKey: string]: TypedSetterItem<T, P> }
     ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }> {
-        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const renderedAttrKeyPathsToSetterKeys: { [renderedAttrKeyPath: string]: string } = {};
             const mutatorsRenderedAttrKeyPathsParts: string[][] = [];
@@ -211,7 +211,7 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
     async deleteAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>
     ): Promise<{ subscribersPromise: Promise<any> }> {
-        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             recordWrapper.deleteAttr(attrKeyPath);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
@@ -223,7 +223,7 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
     async deleteMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         attrsKeyPaths: F.AutoPath<T, P>[]
     ): Promise<{ subscribersPromise: Promise<any> }> {
-        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             recordWrapper.deleteMultipleAttrs(attrsKeyPaths);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
@@ -235,7 +235,7 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
     async removeAttrWithReturnedSubscribersPromise<P extends string>(
         attrKeyPath: F.AutoPath<T, P>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
-        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const oldValue = recordWrapper.removeAttr(attrKeyPath);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
@@ -247,7 +247,7 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
     async removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         attrsKeyPaths: F.AutoPath<T, P>[]
     ): Promise<{ removedValues: U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>> | undefined; subscribersPromise: Promise<any> }> {
-        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const removedValues = recordWrapper.removeMultipleAttrs(attrsKeyPaths);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);

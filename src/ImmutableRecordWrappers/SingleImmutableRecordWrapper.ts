@@ -1,44 +1,46 @@
 import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
-import {loadObjectDataToImmutableValuesWithFieldsModel} from "./DataProcessors";
-import {MapModel} from "./ModelsFields";
+import {loadObjectDataToImmutableValuesWithFieldsModel} from "../DataProcessors";
+import {MapModel} from "../ModelsFields";
 import {
     navigateToAttrKeyPathIntoMapModel,
     navigateToAttrKeyPathIntoMapModelV2,
     navigateToAttrKeyPathPartsIntoMapModel
-} from "./utils/fieldsNavigation";
+} from "../utils/fieldsNavigation";
 import {
     separateAttrKeyPath,
     separateAttrKeyPathWithQueryKwargs,
     separatePotentialGetterWithQueryKwargs
-} from "./utils/attrKeyPaths";
-import {PrimitiveAttrGetter, TypedAttrGetter} from "./models";
+} from "../utils/attrKeyPaths";
+import {PrimitiveAttrGetter, TypedAttrGetter} from "../models";
+import BaseImmutableRecordWrapper from "./BaseImmutableRecordWrapper";
 
 
-export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
+export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }> extends BaseImmutableRecordWrapper {
     constructor(
         public RECORD_DATA: immutable.RecordOf<T>,
         public readonly itemModel: MapModel
     ) {
+        super();
     }
 
     static fromRecord<T extends {}>(itemModel: MapModel, record: immutable.RecordOf<T>) {
-        return new ImmutableRecordWrapper<T>(record, itemModel);
+        return new SingleImmutableRecordWrapper<T>(record, itemModel);
     }
 
     static fromData<T extends {}>(itemModel: MapModel, data: T) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel(data, itemModel) as immutable.RecordOf<T>;
-        return new ImmutableRecordWrapper<T>(record, itemModel);
+        return new SingleImmutableRecordWrapper<T>(record, itemModel);
     }
 
     static fromEmpty<T extends {}>(itemModel: MapModel) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel({}, itemModel) as immutable.RecordOf<T>;
-        return new ImmutableRecordWrapper<T>(record, itemModel);
+        return new SingleImmutableRecordWrapper<T>(record, itemModel);
     }
 
     /*static fromNull<T>() {
-        return new ImmutableRecordWrapper<T>();
+        return new SingleImmutableRecordWrapper<T>();
     }*/
 
     updateRecord(record: immutable.RecordOf<T>): immutable.RecordOf<T> {
@@ -162,39 +164,39 @@ export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
     }
 
     // updateMultipleAttrs<T extends { [attrKeyPath: string]: any }>(mutators: Partial<T>): IterableIterator<[keyof T, T[keyof T]]> {
-    updateMultipleAttrs(mutators: { [attrKeyPath: string]: any }): { [attrKeyPath: string]: any | undefined } {
-        const mutatorsKeys: string[] = Object.keys(mutators);
-        if (!(mutatorsKeys.length > 0)) {
+    updateMultipleAttrs(setters: { [setterKey: string]: { renderedAttrKeyPath: string, valueToSet: any } }): { [setterKey: string]: any | undefined } {
+        const settersKeys: string[] = Object.keys(setters);
+        if (!(settersKeys.length > 0)) {
             return {};
         }
         let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
-        const oldValues: { [attrKeyPath: string]: any | undefined } = _.mapValues(mutators, (value: any, attrKeyPath: string) => {
-            const immutableValue: any = immutable.fromJS(value);
-            const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
-            const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
-            const rar = this.RECORD_DATA.toJS();
+        const oldValues: { [setterKey: string]: any | undefined } = _.mapValues(
+            setters, (setterItem: { renderedAttrKeyPathParts: string[], valueToSet: any }, setterKey: string) => {
+                const immutableValue: any = immutable.fromJS(setterItem.valueToSet);
+                const oldValue: any = this.RECORD_DATA.getIn(setterItem.renderedAttrKeyPathParts);
 
-            // navigateToAttrKeyPathIntoMapModelV2(this.itemModel, currentAttrKeyPath, ());
+                // navigateToAttrKeyPathIntoMapModelV2(this.itemModel, currentAttrKeyPath, ());
 
-            for (let i=0; i < attrKeyPathElements.length - 1; i++) {
-                const currentPathElements: string[] = attrKeyPathElements.slice(0, i+1);
-                const fieldModel = navigateToAttrKeyPathPartsIntoMapModel(this.itemModel, currentPathElements);
-                if (fieldModel != null) {
-                    const retrievedItem = alteredRecordData.getIn(currentPathElements);
-                    if (retrievedItem === undefined) {
-                        alteredRecordData = alteredRecordData.setIn(currentPathElements, fieldModel.makeDefault());
-                        // todo: stop using customDefaultValue and use a factory (for list's, map's and record's ?)
+                for (let i=0; i < setterItem.renderedAttrKeyPathParts.length - 1; i++) {
+                    const currentPathElements: string[] = setterItem.renderedAttrKeyPathParts.slice(0, i+1);
+                    const fieldModel = navigateToAttrKeyPathPartsIntoMapModel(this.itemModel, currentPathElements);
+                    if (fieldModel != null) {
+                        const retrievedItem = alteredRecordData.getIn(currentPathElements);
+                        if (retrievedItem === undefined) {
+                            alteredRecordData = alteredRecordData.setIn(currentPathElements, fieldModel.makeDefault());
+                            // todo: stop using customDefaultValue and use a factory (for list's, map's and record's ?)
+                        }
                     }
                 }
-            }
-            /*_.forEach(attrKeyPathElements.slice(0, -1), (attrKeyPathPart: string, index: number) => {
-                const parts = attrKeyPathElements.slice(0, index + 1);
-                navigateToAttrKeyPathIntoMapModelV2(this.itemModel, )
-                const item = alteredRecordData.getIn()
-            });*/
-            alteredRecordData = alteredRecordData.setIn(attrKeyPathElements, immutableValue);
-            return oldValue;
-        });
+                /*_.forEach(attrKeyPathElements.slice(0, -1), (attrKeyPathPart: string, index: number) => {
+                    const parts = attrKeyPathElements.slice(0, index + 1);
+                    navigateToAttrKeyPathIntoMapModelV2(this.itemModel, )
+                    const item = alteredRecordData.getIn()
+                });*/
+                alteredRecordData = alteredRecordData.setIn(setterItem.renderedAttrKeyPathParts, immutableValue);
+                return oldValue;
+            }, {}
+        );
         this.RECORD_DATA = alteredRecordData;
         return oldValues;
     }
