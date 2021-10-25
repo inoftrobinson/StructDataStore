@@ -85,9 +85,9 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
         setters: { [setterKey: string]: TypedSetterItem<T, P> }
     ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }>;*/
 
-    async updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
+    /*async updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         setters: { [setterKey: string]: TypedSetterItem<T, P> }
-    ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }> {
+    ): Promise<{ oldValues: { [setterKey: string]: any | undefined }, subscribersPromise: Promise<any> }> {
         const recordWrapper: BaseImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const renderedAttrKeyPathsToSetterKeys: { [renderedAttrKeyPath: string]: string } = {};
@@ -121,13 +121,14 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
         }
         return {oldValues: undefined as any, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
+     */
 
     /*async updateMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
     ): Promise<any | undefined> {*/
     async updateMultipleAttrs<P extends string>(
         setters: { [setterKey: string]: TypedSetterItem<T, P> }
-    ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }> {
+    ): Promise<{ [setterKey: string]: any | undefined }> {
         // ObjectFlattenedRecursiveMutatorsResults<any, any>
         return (await this.updateMultipleAttrsWithReturnedSubscribersPromise(setters)).oldValues;
     }
@@ -148,14 +149,14 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
         return (await this.updateDataToAttrWithReturnedSubscribersPromise<P>(attrKeyPath, value)).oldValue;
     }
 
-    abstract updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast<any>>(
-        mutators: M
-    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<any, any> | undefined, subscribersPromise: Promise<any> }>;
+    abstract updateDataToMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
+        setters: { [setterKey: string]: TypedSetterItem<T, P> }
+    ): Promise<{ oldValues: { [setterKey: string]: any | undefined}, subscribersPromise: Promise<any> }>;
 
-    async updateDataToMultipleAttrs<M extends ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast<T>>(
-        mutators: M
-    ): Promise<any> {  // ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined
-        return (await this.updateDataToMultipleAttrsWithReturnedSubscribersPromise<M>(mutators)).oldValues;
+    async updateDataToMultipleAttrs<P extends string>(
+        setters: { [setterKey: string]: TypedSetterItem<T, P> }
+    ): Promise<{ [setterKey: string]: any | undefined}> {  // ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined
+        return (await this.updateDataToMultipleAttrsWithReturnedSubscribersPromise<P>(setters)).oldValues;
     }
 
     abstract deleteAttrWithReturnedSubscribersPromise<P extends string>(

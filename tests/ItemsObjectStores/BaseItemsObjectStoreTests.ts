@@ -60,13 +60,15 @@ export async function simpleGetMultipleAttrs(storeFactory: StoreFactory) {
             'container2': {'field1': "c2.f1", 'field2': "c2.f2"}
         }
     });
-    const retrievedFieldsValues: {} = await store.getMultipleAttrs([
-        'record1.container1.field1', 'record1.container1.field2', 'record1.container2.field1'
-    ]);
+    const retrievedFieldsValues: {} = await store.getMultipleAttrs({
+        'getter1': {attrKeyPath: '{{recordKey}}.container1.field1', queryKwargs: {'recordKey': "record1"}},
+        'getter2': {attrKeyPath: '{{recordKey}}.container1.field2', queryKwargs: {'recordKey': "record1"}},
+        'getter3': {attrKeyPath: '{{recordKey}}.container2.field1', queryKwargs: {'recordKey': "record1"}}
+    });
     expect(retrievedFieldsValues).toEqual({
-        'record1.container1.field1': "c1.f1",
-        'record1.container1.field2': "c1.f2",
-        'record1.container2.field1': "c2.f1",
+        'getter1': "c1.f1",
+        'getter2': "c1.f2",
+        'getter3': "c2.f1",
     });
 }
 
@@ -132,14 +134,17 @@ export async function simpleUpdateMultipleAttrs(storeFactory: StoreFactory) {
         'setter3': "c2.f1.alteration1",
     });
 
-    const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([
-        'record1.container1.field1', 'record1.container1.field2', 'record1.container2.field1', 'record1.container2.field2'
-    ]);
+    const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs({
+        'getter1': {attrKeyPath: '{{recordKey}}.container1.field1', queryKwargs: {'recordKey': "record1"}},
+        'getter2': {attrKeyPath: '{{recordKey}}.container1.field2', queryKwargs: {'recordKey': "record1"}},
+        'getter3': {attrKeyPath: '{{recordKey}}.container2.field1', queryKwargs: {'recordKey': "record1"}},
+        'getter4': {attrKeyPath: '{{recordKey}}.container2.field2', queryKwargs: {'recordKey': "record1"}}
+    });
     expect(retrievedFieldsValuesAfterUpdate).toEqual({
-        'record1.container1.field1': "c1.f1.alteration2",
-        'record1.container1.field2': "c1.f2.alteration2",
-        'record1.container2.field1': "c2.f1.alteration2",
-        'record1.container2.field2': "c2.f2.alteration1",
+        'getter1': "c1.f1.alteration2",
+        'getter2': "c1.f2.alteration2",
+        'getter3': "c2.f1.alteration2",
+        'getter4': "c2.f2.alteration1",
     });
 }
 
@@ -199,14 +204,17 @@ export async function simpleDeleteMultipleAttrs(storeFactory: StoreFactory) {
         'record1.container1.field1', 'record1.container1.field2', 'record1.container2.field1'
     ]);
 
-    const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([
-        'record1.container1.field1', 'record1.container1.field2', 'record1.container2.field1', 'record1.container2.field2'
-    ]);
+    const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs({
+        'getter1': {attrKeyPath: '{{recordKey}}.container1.field1', queryKwargs: {'recordKey': "record1"}},
+        'getter2': {attrKeyPath: '{{recordKey}}.container1.field2', queryKwargs: {'recordKey': "record1"}},
+        'getter3': {attrKeyPath: '{{recordKey}}.container2.field1', queryKwargs: {'recordKey': "record1"}},
+        'getter4': {attrKeyPath: '{{recordKey}}.container2.field2', queryKwargs: {'recordKey': "record1"}}
+    });
     expect(retrievedFieldsValuesAfterUpdate).toEqual({
-        'record1.container1.field1': undefined,
-        'record1.container1.field2': undefined,
-        'record1.container2.field1': undefined,
-        'record1.container2.field2': "c2.f2",
+        'getter1': undefined,
+        'getter2': undefined,
+        'getter3': undefined,
+        'getter4': "c2.f2",
     });
 }
 
@@ -268,14 +276,17 @@ export async function simpleRemoveMultipleAttrs(storeFactory: StoreFactory) {
         'record1.container1.field1', 'record1.container1.field2', 'record1.container2.field1'
     ]);
 
-    const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([
-        'record1.container1.field1', 'record1.container1.field2', 'record1.container2.field1', 'record1.container2.field2'
-    ]);
+    const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs({
+        'getter1': {attrKeyPath: '{{recordKey}}.container1.field1', queryKwargs: {'recordKey': "record1"},
+        'getter2': {attrKeyPath: '{{recordKey}}.container1.field2', queryKwargs: {'recordKey': "record1"},
+        'getter3': {attrKeyPath: '{{recordKey}}.container2.field1', queryKwargs: {'recordKey': "record1"},
+        'getter4': {attrKeyPath: '{{recordKey}}.container2.field2', queryKwargs: {'recordKey': "record1"}
+    });
     expect(retrievedFieldsValuesAfterUpdate).toEqual({
-        'record1.container1.field1': undefined,
-        'record1.container1.field2': undefined,
-        'record1.container2.field1': undefined,
-        'record1.container2.field2': "c2.f2",
+        'getter1': undefined,
+        'getter2': undefined,
+        'getter3': undefined,
+        'getter4': "c2.f2",
     });
 }
 
@@ -414,9 +425,15 @@ export async function simpleUpdateDataToMultipleAttrs(storeFactory: StoreFactory
     );
 
     await store.updateDataToMultipleAttrs({
-        'record1.value': "v",
-        'record1.container': {
-            'field1': "c1.f1"
+        'setter1': {
+            attrKeyPath: '{{recordKey}}.value',
+            queryKwargs: {'recordKey': "record1"},
+            valueToSet: "v"
+        },
+        'setter2': {
+            attrKeyPath: '{{recordKey}}.container',
+            queryKwargs: {'recordKey': "record1"},
+            valueToSet: {'field1': "c1.f1"}
         }
     });
     const retrievedRecord: immutable.RecordOf<StoreItemModel> | undefined = await store.getAttr('record1');
@@ -464,14 +481,20 @@ export async function typedDictUpdateDataToMultipleAttrs(storeFactory: StoreFact
         'record1.items.item42B': "i2.i42B"
     });
     const retrievedItems: {
-        'record1.items.item42A': string | undefined,
-        'record1.items.item42B': string | undefined,
-    } = await store.getMultipleAttrs([
-        'record1.items.item42A',
-        'record1.items.item42B'
-    ]);
+        'firstItem': string | undefined,
+        'secondItem': string | undefined,
+    } = await store.getMultipleAttrs({
+        'firstItem': {
+            attrKeyPath: '{{recordKey}}.items.{{itemKey}}',
+            queryKwargs: {'recordKey': "record1", 'itemKey': "item42A"}
+        },
+        'secondItem': {
+            attrKeyPath: '{{recordKey}}.items.{{itemKey}}',
+            queryKwargs: {'recordKey': "record1", 'itemKey': "item42B"}
+        }
+    });
     expect(retrievedItems).toEqual({
-        'record1.items.item42A': "i1.i42A",
-        'record1.items.item42B': "i2.i42B"
+        'firstItem': "i1.i42A",
+        'secondItem': "i2.i42B"
     });
 }

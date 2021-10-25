@@ -132,7 +132,7 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
     }
 
     // getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): U.Merge<O.P.Pick<T, S.Split<P, ".">>> {
-    getMultipleAttrs(getters: (string | PrimitiveAttrGetter)[]): { [attrKeyPath: string]: any };
+    /*getMultipleAttrs(getters: (string | PrimitiveAttrGetter)[]): { [attrKeyPath: string]: any };
     getMultipleAttrs(getters: { [getterKey: string]: string | PrimitiveAttrGetter }): { [getterKey: string]: any } {
         const retrievedValues: { [p: string]: any } = (
             _.isArray(getters) ? _.transform(
@@ -153,6 +153,15 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
             })()
         );
         return retrievedValues;
+    }*/
+
+    getMultipleAttrs(getters: { [getterKey: string]: { renderedAttrKeyPathParts: string[] } }): { [getterKey: string]: any } {
+        const retrievedValues: { [getterKey: string]: any } = _.mapValues(
+            getters, (getterItem: { renderedAttrKeyPathParts: string[] }, getterKey: string) => {
+                return this.RECORD_DATA.getIn(getterItem.renderedAttrKeyPathParts);
+            }
+        );
+        return retrievedValues;
     }
 
     // updateAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>, value: any): O.Path<T, S.Split<P, '.'>> | undefined {
@@ -164,7 +173,7 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
     }
 
     // updateMultipleAttrs<T extends { [attrKeyPath: string]: any }>(mutators: Partial<T>): IterableIterator<[keyof T, T[keyof T]]> {
-    updateMultipleAttrs(setters: { [setterKey: string]: { renderedAttrKeyPath: string, valueToSet: any } }): { [setterKey: string]: any | undefined } {
+    updateMultipleAttrs(setters: { [setterKey: string]: { renderedAttrKeyPathParts: string[], valueToSet: any } }): { [setterKey: string]: any | undefined } {
         const settersKeys: string[] = Object.keys(setters);
         if (!(settersKeys.length > 0)) {
             return {};
