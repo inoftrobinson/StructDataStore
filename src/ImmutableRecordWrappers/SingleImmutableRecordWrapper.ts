@@ -155,10 +155,10 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
         return retrievedValues;
     }*/
 
-    getMultipleAttrs(getters: { [getterKey: string]: { renderedAttrKeyPathParts: string[] } }): { [getterKey: string]: any } {
+    getMultipleAttrs(getters: { [getterKey: string]: string[] }): { [getterKey: string]: any } {
         const retrievedValues: { [getterKey: string]: any } = _.mapValues(
-            getters, (getterItem: { renderedAttrKeyPathParts: string[] }, getterKey: string) => {
-                return this.RECORD_DATA.getIn(getterItem.renderedAttrKeyPathParts);
+            getters, (getterRenderedAttrKeyPathParts: string[], getterKey: string) => {
+                return this.RECORD_DATA.getIn(getterRenderedAttrKeyPathParts);
             }
         );
         return retrievedValues;
@@ -204,21 +204,20 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
                 });*/
                 alteredRecordData = alteredRecordData.setIn(setterItem.renderedAttrKeyPathParts, immutableValue);
                 return oldValue;
-            }, {}
+            }
         );
         this.RECORD_DATA = alteredRecordData;
         return oldValues;
     }
 
     // deleteAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): void {
-    deleteAttr(attrKeyPath: string): void {
-        const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
-        this.RECORD_DATA = this.RECORD_DATA.deleteIn(attrKeyPathElements);
+    deleteAttr(renderedAttrKeyPathParts: string[]): void {
+        this.RECORD_DATA = this.RECORD_DATA.deleteIn(renderedAttrKeyPathParts);
     }
 
     // deleteMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): void {
-    deleteMultipleAttrs(attrsKeyPaths: string[]): void {
-        if (!(attrsKeyPaths.length > 0)) {
+    deleteMultipleAttrs(renderedAttrsKeyPathsParts: string[][]): void {
+        if (!(renderedAttrsKeyPathsParts.length > 0)) {
             return;
         }
         /*
@@ -241,18 +240,16 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
         }, {});
          */
         let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
-        _.forEach(attrsKeyPaths, (attrKeyPath: string) => {
-            const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
-            alteredRecordData = alteredRecordData.deleteIn(attrKeyPathElements);
+        _.forEach(renderedAttrsKeyPathsParts, (renderedAttrKeyPathPartsItem: string[]) => {
+            alteredRecordData = alteredRecordData.deleteIn(renderedAttrKeyPathPartsItem);
         });
         this.RECORD_DATA = alteredRecordData;
     }
 
     // removeAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): O.Path<T, S.Split<P, '.'>> | undefined {
-    removeAttr(attrKeyPath: string): any | undefined {
-        const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
-        const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
-        this.RECORD_DATA = this.RECORD_DATA.deleteIn(attrKeyPathElements);
+    removeAttr(renderedAttrKeyPathParts: string[]): any | undefined {
+        const oldValue: any = this.RECORD_DATA.getIn(renderedAttrKeyPathParts);
+        this.RECORD_DATA = this.RECORD_DATA.deleteIn(renderedAttrKeyPathParts);
         return oldValue;
     }
 

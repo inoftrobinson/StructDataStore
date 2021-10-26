@@ -24,21 +24,6 @@ export class BasicItemsObjectStore<T extends { [p: string]: any }> extends BaseI
         this.pendingRecordItemsRetrievalPromise = undefined;
     }
 
-    async updateItemWithSubscribersPromise(
-        itemKey: string, itemData: immutable.RecordOf<T>
-    ): Promise<{ oldValue: immutable.RecordOf<T> | null, subscribersPromise: Promise<any> }> {
-        // Item update without having previously loaded the said item is not allowed
-        await this.getRecordItems();
-        if (this.RECORD_WRAPPERS !== undefined) {
-            const existingRecordWrapper: SingleImmutableRecordWrapper<T> | null = this.RECORD_WRAPPERS[itemKey];
-            this.RECORD_WRAPPERS[itemKey] = new SingleImmutableRecordWrapper<T>(itemData, this.props.itemModel);
-            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(itemKey);
-            return {oldValue: existingRecordWrapper != null ? existingRecordWrapper.RECORD_DATA : null, subscribersPromise};
-        } else {
-            return {oldValue: null, subscribersPromise: Promise.resolve(undefined)};
-        }
-    }
-
     loadFromData(data: { [recordKey: string]: T }): { subscribersPromise: Promise<any> } {
         this.RECORD_WRAPPERS = this.recordsDataToWrappers(data);
         const subscribersPromise: Promise<any> = this.triggerSubscribers();

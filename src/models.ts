@@ -21,30 +21,19 @@ export interface PrimitiveAttrGetter {
     queryKwargs?: { [argKey: string]: any };
 }
 
-export interface TypedAttrGetter<T extends { [p: string]: any }, P extends string> {
+export interface TypedAttrSelector<T extends { [p: string]: any }, P extends string> {
     attrKeyPath: F.AutoPath<T, P>;
     queryKwargs?: { [argKey: string]: any };
 }
 
-export interface TypedFieldGetter<T extends { [p: string]: any }, P extends string> {
-    attrKeyPath: F.AutoPath<T, P>;
-    queryKwargs?: { [argKey: string]: any };
-}
+export type TypedAttrGetter<T extends { [p: string]: any }, P extends string> = TypedAttrSelector<T, P>;
 
-export interface TypedSetterItem<T extends { [p: string]: any }, P extends string> {
-    attrKeyPath: F.AutoPath<T, P>;
-    queryKwargs?: { [argKey: string]: any };
+export type TypedAttrRemover<T extends { [p: string]: any }, P extends string> = TypedAttrSelector<T, P>;
+
+export interface TypedAttrSetter<T extends { [p: string]: any }, P extends string> extends TypedAttrSelector<T, P> {
     valueToSet: O.Path<T, S.Split<P, '.'>>;
 }
 
-export interface TypedImmutableSetterItem<T extends { [p: string]: any }, P extends string> {
-    attrKeyPath: F.AutoPath<T, P>;
-    queryKwargs?: { [argKey: string]: any };
+export interface TypedImmutableAttrSetter<T extends { [p: string]: any }, P extends string> extends TypedAttrSelector<T, P> {
     valueToSet: ImmutableCast<O.Path<T, S.Split<P, '.'>>>;
-}
-
-export interface InternalTypedSetterItem<T extends { [p: string]: any }, P extends string> {
-    attrKeyPath: F.AutoPath<T, P>;
-    queryKwargs?: { [argKey: string]: any };
-    valueToSet: O.Path<T, S.Split<P, '.'>>;
 }

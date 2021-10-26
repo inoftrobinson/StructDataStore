@@ -30,16 +30,6 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
         return {subscribersPromise};
     }
 
-    updateItemWithSubscribersPromise(
-        itemKey: string, itemData: immutable.RecordOf<T>
-    ): Promise<{ oldValue: immutable.RecordOf<T> | null, subscribersPromise: Promise<any> }> {
-        // Item update without having previously loaded the said item is allowed
-        const oldValue: immutable.RecordOf<T> | null = this.RECORD_WRAPPERS[itemKey]?.RECORD_DATA;
-        this.RECORD_WRAPPERS[itemKey] = new SingleImmutableRecordWrapper<T>(itemData, this.props.itemModel);
-        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(itemKey);
-        return {oldValue, subscribersPromise};
-    }
-
     retrieveAndCacheRecordItem(recordKey: string): Promise<SingleImmutableRecordWrapper<T> | null>  {
         const existingPendingPromise: Promise<SingleImmutableRecordWrapper<T> | null> | undefined = this.pendingKeyItemsRetrievalPromises[recordKey];
         if (existingPendingPromise !== undefined) {

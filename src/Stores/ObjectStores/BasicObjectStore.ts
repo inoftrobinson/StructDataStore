@@ -11,7 +11,13 @@ import {
     ObjectOptionalFlattenedRecursiveMutators
 } from "../../types";
 import {navigateToAttrKeyPathIntoMapModelV2} from "../../utils/fieldsNavigation";
-import {BaseDataRetrievalPromiseResult, TypedAttrGetter, TypedSetterItem} from "../../models";
+import {
+    BaseDataRetrievalPromiseResult,
+    TypedAttrGetter,
+    TypedImmutableAttrSetter,
+    TypedAttrSetter,
+    TypedAttrRemover, TypedAttrSelector
+} from "../../models";
 import {
     renderAttrKeyPathWithQueryKwargs,
     separateAttrKeyPathWithQueryKwargs,
@@ -88,27 +94,27 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return undefined;
     }
 
-    async getMultipleAttrs<P extends string>(
+    /*async getMultipleAttrs<P extends string>(
         getters: (F.AutoPath<T, P> | TypedAttrGetter<T, P>)[]
-    ): Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>>;
+    ): Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>>;*/
     async getMultipleAttrs<P extends string>(
-        getters: { [getterKey: string]: F.AutoPath<T, P> | TypedAttrGetter<T, P> }
-    ): Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>> {
+        getters: { [getterKey: string]: TypedAttrGetter<T, P> }
+    ): Promise<{ [getterKey: string]: any | undefined }> {
+    // Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>> {
         const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            return recordWrapper.getMultipleAttrs(getters) as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>;
+            return recordWrapper.getMultipleAttrs(getters);  // as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>;
         }
-        return {} as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, '.'>>>>;
+        return {};  // as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, '.'>>>>;
     }
 
     async updateAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P> | TypedAttrGetter<T, P>, value: ImmutableCast<O.Path<T, S.Split<P, '.'>>>
+        { attrKeyPath, queryKwargs, valueToSet }: TypedImmutableAttrSetter<T, P>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            const renderedAttrKeyPathParts: string[] = separatePotentialGetterWithQueryKwargs(attrKeyPath);
-            // const renderedAttrKeyPath: string = renderedAttrKeyPathParts.join('.');
-            const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = recordWrapper.updateAttr(renderedAttrKeyPathParts, value);
+            const renderedAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(attrKeyPath, queryKwargs);
+            const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = recordWrapper.updateAttr(renderedAttrKeyPathParts, valueToSet);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(renderedAttrKeyPathParts);
             return {oldValue, subscribersPromise};
         }
@@ -128,14 +134,14 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     }*/
 
     async updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        setters: { [setterKey: string]: TypedSetterItem<T, P> }
+        setters: { [setterKey: string]: TypedAttrSetter<T, P> }
     ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }> {
         const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const renderedAttrKeyPathsToSetterKeys: { [renderedAttrKeyPath: string]: string } = {};
             const mutatorsRenderedAttrKeyPathsParts: string[][] = [];
             const renderedMutators: { [renderedAttrKeyPath: string]: any } = _.transform(
-                setters, (output: { [renderedAttrKeyPath: string]: any }, setterItem: TypedSetterItem<T, P>, setterKey: string) => {
+                setters, (output: { [renderedAttrKeyPath: string]: any }, setterItem: TypedAttrSetter<T, P>, setterKey: string) => {
                     const renderedAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(setterItem.attrKeyPath, setterItem.queryKwargs);
                     const renderedAttrKeyPath: string = renderedAttrKeyPathParts.join('.');
                     renderedAttrKeyPathsToSetterKeys[renderedAttrKeyPath] = setterKey;
@@ -165,25 +171,24 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
     }
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P> | TypedAttrGetter<T, P>, value: O.Path<T, S.Split<P, ".">>
+        { attrKeyPath, queryKwargs, valueToSet }: TypedImmutableAttrSetter<T, P>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined; subscribersPromise: Promise<any> }> {
     /*async updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<T>>(
         attrKeyPath: P, value: O.Path<T, P>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, P>> | undefined, subscribersPromise: Promise<any> }> {*/
-        /*const renderedAttrKeyPathParts: string[] = separatePotentialGetterWithQueryKwargs(attrKeyPath);
-        const renderedAttrKeyPath: string = renderedAttrKeyPathParts.join('.');*/
 
         // We directly use the non-rendered attrKeyPath (ether itself if the client has passed a keyPath,
         // or the attrKeyPath property if the client passed an AttrGetter object), because the navigation
         // into a field is not dependant upon having key placeholders path parts, or not.
         // Hence we do not need to render the queryKwargs to the attrKeyPath.
-        const nonRenderedAttrKeyPath: F.AutoPath<T, P> = _.isPlainObject(attrKeyPath) ? (attrKeyPath as TypedAttrGetter<T, P>).attrKeyPath : attrKeyPath;
         const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = (
-            navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, nonRenderedAttrKeyPath)
+            navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, attrKeyPath)
         );
         if (matchingField != null) {
-            const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(value);
-            return await this.updateAttrWithReturnedSubscribersPromise<P>(attrKeyPath, loadedValue);
+            const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(valueToSet);
+            return await this.updateAttrWithReturnedSubscribersPromise<P>(
+                {attrKeyPath, queryKwargs, valueToSet: loadedValue}
+            );
         } else {
             console.error(`${attrKeyPath} was not a valid path`);
         }
@@ -221,23 +226,27 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
     }
 
     async deleteMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        attrsKeyPaths: F.AutoPath<T, P>[]
+        removers: TypedAttrRemover<T, P>[]
     ): Promise<{ subscribersPromise: Promise<any> }> {
         const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            recordWrapper.deleteMultipleAttrs(attrsKeyPaths);
-            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+            const renderedAttrsKeyPathsParts: string[][] = _.map(removers, (removerItem: TypedAttrRemover<T, P>) => {
+                return separateAttrKeyPathWithQueryKwargs(removerItem.attrKeyPath, removerItem.queryKwargs);
+            });
+            recordWrapper.deleteMultipleAttrs(renderedAttrsKeyPathsParts);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(renderedAttrsKeyPathsParts);
             return {subscribersPromise};
         }
         return {subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
     async removeAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<T, P>
+        attrKeyPath: F.AutoPath<T, P>, queryKwargs?: { [argKey: string]: any }
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            const oldValue = recordWrapper.removeAttr(attrKeyPath);
+            const renderedAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(attrKeyPath, queryKwargs);
+            const oldValue = recordWrapper.removeAttr(renderedAttrKeyPathParts);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
             return {oldValue, subscribersPromise};
         }
@@ -245,12 +254,15 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
     }
 
     async removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        attrsKeyPaths: F.AutoPath<T, P>[]
+        removers: TypedAttrRemover<T, P>[]
     ): Promise<{ removedValues: U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>> | undefined; subscribersPromise: Promise<any> }> {
         const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            const removedValues = recordWrapper.removeMultipleAttrs(attrsKeyPaths);
-            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+            const renderedAttrsKeyPathsParts: string[][] = _.map(removers, (removerItem: TypedAttrRemover<T, P>) => {
+                return separateAttrKeyPathWithQueryKwargs(removerItem.attrKeyPath, removerItem.queryKwargs);
+            });
+            const removedValues = recordWrapper.removeMultipleAttrs(renderedAttrsKeyPathsParts);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(renderedAttrsKeyPathsParts);
             return {removedValues, subscribersPromise};
         }
         return {removedValues: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};

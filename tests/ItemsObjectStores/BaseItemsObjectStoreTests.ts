@@ -87,7 +87,11 @@ export async function simpleUpdateAttr(storeFactory: StoreFactory) {
     );
     store.loadFromData({'record1': {'container1': {'field1': "c1.f1.alteration1"}}});
 
-    const oldValue: string | undefined = await store.updateAttr('record1.container1.field1', "c1.f1.alteration2");
+    const oldValue: string | undefined = await store.updateAttr({
+        attrKeyPath: '{{recordKey}}.container1.field1',
+        queryKwargs: {'recordKey': "record1"},
+        valueToSet: "c1.f1.alteration2"
+    });
     expect(oldValue).toEqual("c1.f1.alteration1");
 
     const retrievedNewValue: string | undefined = await store.getAttr('record1.container1.field1');
@@ -201,7 +205,9 @@ export async function simpleDeleteMultipleAttrs(storeFactory: StoreFactory) {
         }
     });
     await store.deleteMultipleAttrs([
-        'record1.container1.field1', 'record1.container1.field2', 'record1.container2.field1'
+        {attrKeyPath: '{{recordKey}}.container1.field1', queryKwargs: {'recordKey': "record1"}},
+        {attrKeyPath: '{{recordKey}}.container1.field2', queryKwargs: {'recordKey': "record1"}},
+        {attrKeyPath: '{{recordKey}}.container2.field1', queryKwargs: {'recordKey': "record1"}},
     ]);
 
     const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs({
@@ -233,13 +239,19 @@ export async function simpleRemoveAttr(storeFactory: StoreFactory) {
     );
     store.loadFromData({'record1': {'container1': {'field1': "c1.f1"}}});
 
-    const retrievedValueBeforeRemoval: string | undefined = await store.getAttr('record1.container1.field1');
+    const retrievedValueBeforeRemoval: string | undefined = await store.getAttr(
+        '{{recordKey}}.container1.field1', {'recordKey': "record1"}
+    );
     expect(retrievedValueBeforeRemoval).toEqual("c1.f1");
 
-    const removedValue: string | undefined = await store.removeAttr('record1.container1.field1');
+    const removedValue: string | undefined = await store.removeAttr(
+        '{{recordKey}}.container1.field1', {'recordKey': "record1"}
+    );
     expect(removedValue).toEqual("c1.f1");
 
-    const retrievedValueAfterRemoval: string | undefined = await store.getAttr('record1.container1.field1');
+    const retrievedValueAfterRemoval: string | undefined = await store.getAttr(
+        '{{recordKey}}.container1.field1', {'recordKey': "record1"}
+    );
     expect(retrievedValueAfterRemoval).toEqual(undefined);
 }
 
@@ -272,8 +284,10 @@ export async function simpleRemoveMultipleAttrs(storeFactory: StoreFactory) {
             'container2': {'field1': "c2.f1", 'field2': "c2.f2"}
         }
     });
-    await store.deleteMultipleAttrs([
-        'record1.container1.field1', 'record1.container1.field2', 'record1.container2.field1'
+    const removedValues = await store.removeMultipleAttrs([
+        {attrKeyPath: '{{recordKey}}.container1.field1', queryKwargs: {'recordKey': "record1"}},
+        {attrKeyPath: '{{recordKey}}.container1.field2', queryKwargs: {'recordKey': "record1"}},
+        {attrKeyPath: '{{recordKey}}.container2.field1', queryKwargs: {'recordKey': "record1"}},
     ]);
 
     const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs({
@@ -319,12 +333,13 @@ export async function listenersSharing(storeFactory: StoreFactory) {
     });
 
     let listenersTriggersCounter: number = 0;
-    store.subscribeMultipleAttrs(
-        ['record1.container1.field1', 'record1.container1.field2', 'record1.container2.field1'],
-        () => {
-            listenersTriggersCounter += 1;
-        }
-    );
+    store.subscribeMultipleAttrs([
+        {attrKeyPath: 'record1.container1.field1', queryKwargs: {'recordKey': "record1"}},
+        {attrKeyPath: 'record1.container1.field2', queryKwargs: {'recordKey': "record1"}},
+        {attrKeyPath: 'record1.container2.field1', queryKwargs: {'recordKey': "record1"}}
+    ], () => {
+        listenersTriggersCounter += 1;
+    });
     await store.updateMultipleAttrs({
         'setter1': {attrKeyPath: 'record1.container1.field1', valueToSet: "c1.f1.alteration2"},
         'setter2': {attrKeyPath: 'record1.container1.field2', valueToSet: "c1.f2.alteration2"},
@@ -362,19 +377,43 @@ export async function listenersSeparation(storeFactory: StoreFactory) {
     });
 
     let listenersTriggersCounter: number = 0;
-    store.subscribeToAttr('record1.container1.field1',() => {
-        listenersTriggersCounter += 1;
+    store.subscribeToAttr({
+        attrKeyPath: '{{recordKey}}.container1.field1',
+        queryKwargs: {'recordKey': "record1"},
+        callback: () => {
+            listenersTriggersCounter += 1;
+        }
     });
-    store.subscribeToAttr('record1.container1.field2',() => {
-        listenersTriggersCounter += 1;
+    store.subscribeToAttr({
+        attrKeyPath: '{{recordKey}}.container1.field2',
+        queryKwargs: {'recordKey': "record1"},
+        callback: () => {
+            listenersTriggersCounter += 1;
+        }
     });
-    store.subscribeToAttr('record1.container2.field1',() => {
-        listenersTriggersCounter += 1;
+    store.subscribeToAttr({
+        attrKeyPath: '{{recordKey}}.container2.field1',
+        queryKwargs: {'recordKey': "record1"},
+        callback: () => {
+            listenersTriggersCounter += 1;
+        }
     });
     await store.updateMultipleAttrs({
-        'setter1': {attrKeyPath: 'record1.container1.field1', valueToSet: "c1.f1.alteration2"},
-        'setter2': {attrKeyPath: 'record1.container1.field2', valueToSet: "c1.f2.alteration2"},
-        'setter3': {attrKeyPath: 'record1.container2.field1', valueToSet: "c2.f1.alteration2"},
+        'setter1': {
+            attrKeyPath: '{{recordKey}}.container1.field1',
+            queryKwargs: {'recordKey': "record1"},
+            valueToSet: "c1.f1.alteration2"
+        },
+        'setter2': {
+            attrKeyPath: '{{recordKey}}.container1.field2',
+            queryKwargs: {'recordKey': "record1"},
+            valueToSet: "c1.f2.alteration2"
+        },
+        'setter3': {
+            attrKeyPath: '{{recordKey}}.container2.field1',
+            queryKwargs: {'recordKey': "record1"},
+            valueToSet: "c2.f1.alteration2"
+        },
     });
     expect(listenersTriggersCounter).toEqual(3);
 }
@@ -395,13 +434,19 @@ export async function simpleUpdateDataToAttr(storeFactory: StoreFactory) {
         }})
     );
 
-    await store.updateDataToAttr('record1', {
-        'value': "v",
-        'container': {
-            'field1': "c1.f1"
+    await store.updateDataToAttr({
+        attrKeyPath: '{{recordKey}}',
+        queryKwargs: {'recordKey': "record1"},
+        valueToSet: {
+            'value': "v",
+            'container': {
+                'field1': "c1.f1"
+            }
         }
     });
-    const retrievedRecord: immutable.RecordOf<StoreItemModel> | undefined = await store.getAttr('record1');
+    const retrievedRecord: immutable.RecordOf<StoreItemModel> | undefined = await store.getAttr(
+        '{{recordKey}}', {'recordKey': "record1"}
+    );
     expect(retrievedRecord?.toJS()).toEqual({
         'value': "v",
         'container': {'field1': "c1.f1"}
@@ -457,8 +502,15 @@ export async function typedDictUpdateDataToAttr(storeFactory: StoreFactory) {
     );
     store.loadFromData({'record1': {items: {}}});
 
-    await store.updateDataToAttr('record1.items.item42A', "i1.i42A");
-    const retrievedItem: any | undefined = await store.getAttr('record1.items.item42A');
+    await store.updateDataToAttr({
+        attrKeyPath: '{{recordKey}}.items.{{itemKey}}',
+        queryKwargs: {'recordKey': "record1", 'itemKey': "item42A"},
+        valueToSet: "i1.i42A"
+    });
+    const retrievedItem: any | undefined = await store.getAttr(
+        '{{recordKey}}.items.{{itemKey}}',
+        {'recordKey': "record1", 'itemKey': "item42A"}
+    );
     expect(retrievedItem).toEqual("i1.i42A");
 }
 
@@ -477,8 +529,16 @@ export async function typedDictUpdateDataToMultipleAttrs(storeFactory: StoreFact
     store.loadFromData({'record1': {items: {}}});
 
     await store.updateDataToMultipleAttrs({
-        'record1.items.item42A': "i1.i42A",
-        'record1.items.item42B': "i2.i42B"
+        'setter1': {
+            attrKeyPath: '{{recordKey}}.items.{{itemKey}}',
+            queryKwargs: {'recordKey': "record1", 'itemKey': "item42A"},
+            valueToSet: "i1.i42A"
+        },
+        'setter2': {
+            attrKeyPath: '{{recordKey}}.items.{{itemKey}}',
+            queryKwargs: {'recordKey': "record1", 'itemKey': "item42B"},
+            valueToSet: "i2.i42B"
+        }
     });
     const retrievedItems: {
         'firstItem': string | undefined,

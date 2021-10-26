@@ -1,6 +1,6 @@
 import {U, L, O, S, A} from "ts-toolbelt";
 import * as immutable from "immutable";
-import {InternalTypedSetterItem, TypedSetterItem} from "./models";
+import {TypedAttrSetter} from "./models";
 
 
 /** Cast all object items to the ImmutableCast if T is an object, otherwise returns C (continuation Type) **/
@@ -37,13 +37,13 @@ const joinedPaths: JoinedPaths<{ container: { field1: number}, container2: { fie
 joinedPaths
 
 export type ObjectOptionalFlattenedRecursiveMutatorsWithSetterKeys<
-    T extends { [p: string]: any }, S extends { [setterKey: string]: TypedSetterItem<T, any> }
+    T extends { [p: string]: any }, S extends { [setterKey: string]: TypedAttrSetter<T, any> }
     // { attrKeyPath: keyof O.Paths<T>; queryKwargs?: any; valueToSet: any; }
 > = (
     { [K in A.Keys<S>]: O.Path<T, S[K]['attrKeyPath']>}
     // O.Optional<{ [K in ObjectFlattenedRecursiveKeys<A>]: ImmutableCast<O.Path<A, S.Split<K, '.'>>> }>
 );
-// function rar<T extends { [p: string]: any }, S extends { [setterKey: string]: TypedSetterItem<T, any> }>(
+// function rar<T extends { [p: string]: any }, S extends { [setterKey: string]: TypedAttrSetter<T, any> }>(
 // S.Join<O.Paths<T>, '.'>
 
 interface BasicStoreContainerModel {
@@ -56,7 +56,7 @@ export type SetterItem<P extends string> = { attrKeyPath: P, valueToSet: O.Path<
 function rar<P extends string, Setters extends { [setterKey: string]: { attrKeyPath: P, valueToSet: O.Path<BasicStoreContainerModel, S.Split<P, '.'>> } }>(
 // function rar<S extends { [setterKey: string]: { attrKeyPath: string } }>(
 // function rar<P extends string, S extends { [setterKey: string]: SetterItem<P> }>(
-    //setters: { [K in A.Keys<S>]: TypedSetterItem<{container: {field1: number}}, P> }
+    //setters: { [K in A.Keys<S>]: TypedAttrSetter<{container: {field1: number}}, P> }
     // setters: { [K in A.Keys<S>]: { attrKeyPath: P, valueToSet: O.Path<{container: {field1: number}}, S[K]['attrKeyPath']> } }
     // setters: { [K in A.Keys<S>]: { attrKeyPath: P, valueToSet: O.Path<{container: {field1: number}}, S[K]['attrKeyPath']> } }
     // setters: { [K in A.Keys<S>]: SetterItem<S[K]['attrKeyPath']> }

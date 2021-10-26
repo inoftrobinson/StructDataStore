@@ -7,16 +7,20 @@ import {BasicFieldModel, MapModel, TypedDictFieldModel} from "../../../ModelsFie
 import SingleImmutableRecordWrapper from "../../../ImmutableRecordWrappers/SingleImmutableRecordWrapper";
 import {
     ImmutableCast,
-    ObjectFlattenedRecursiveMutatorsResults,
-    ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast
+    ObjectOptionalFlattenedRecursiveMutators
 } from "../../../types";
 import {navigateToAttrKeyPathIntoMapModelV2} from "../../../utils/fieldsNavigation";
 import {
-    renderAttrKeyPathWithQueryKwargs,
     separateAttrKeyPath,
     separateAttrKeyPathWithQueryKwargs
 } from "../../../utils/attrKeyPaths";
-import {TypedAttrGetter, TypedFieldGetter, TypedImmutableSetterItem, TypedSetterItem} from "../../../models";
+import {
+    TypedAttrGetter,
+    TypedImmutableAttrSetter,
+    TypedAttrSetter,
+    TypedAttrRemover,
+    TypedAttrSelector
+} from "../../../models";
 
 
 export interface BaseItemsObjectStoreProps extends BaseObjectStoreProps {
@@ -38,25 +42,12 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         return {itemKey: attrKeyPathParts[0], relativeAttrKeyPath};
     }
 
-    private makeRenderRelativeAttrKeyPath<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, queryKwargs?: { [argKey: string]: any }
-    ): {
-        itemKey: string, renderedRelativeAttrKeyPath: F.AutoPath<T, P> | null
-    } {
-        const renderedAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(attrKeyPath);
-        const renderedRelativeAttrKeyPath: F.AutoPath<T, P> | null = (
-            renderedAttrKeyPathParts.length > 1 ? renderedAttrKeyPathParts.slice(1).join('.') as F.AutoPath<T, P> : null
-        );
-        return {itemKey: attrKeyPathParts[0], renderedRelativeAttrKeyPath};
-    }
-
-
-    protected async getMatchingDataWrapper<P extends string>(attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>): (
-        Promise<{ dataWrapper: SingleImmutableRecordWrapper<T> | null, relativeAttrKeyPath: F.AutoPath<T, P> | null }>
-    ) {
-        const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);
-        const dataWrapper: SingleImmutableRecordWrapper<T> | null = await this.getSingleRecordItem(itemKey);
-        return {dataWrapper, relativeAttrKeyPath};
+    protected async getMatchingDataWrapper<P extends string>(
+        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, queryKwargs: { [argKey: string]: any }
+    ): Promise<{ recordWrapper: SingleImmutableRecordWrapper<T> | null, renderedRelativeAttrKeyPathParts: F.AutoPath<T, P> | null }> {
+        const renderedAbsoluteAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(attrKeyPath, queryKwargs);
+        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getSingleRecordItem(renderedAbsoluteAttrKeyPathParts[0]);
+        return {recordWrapper, renderedRelativeAttrKeyPathParts: renderedAbsoluteAttrKeyPathParts.slice(1)};
     }
 
     protected makeRecordDataWrapperFromItem(recordItem: immutable.RecordOf<T>): SingleImmutableRecordWrapper<T> {
@@ -84,15 +75,8 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     async getAttr<P extends string>(
         attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, queryKwargs?: { [argKey: string]: any }
     ): Promise<ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined> {
-        const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
-        if (dataWrapper != null) {
-            if (relativeAttrKeyPath != null) {
-                return dataWrapper.getAttr(relativeAttrKeyPath, queryKwargs);
-            } else {
-                return dataWrapper.RECORD_DATA as any;
-            }
-        }
-        return undefined;
+        const {recordWrapper, renderedRelativeAttrKeyPathParts} = await this.getMatchingDataWrapper<P>(attrKeyPath, queryKwargs);
+        return recordWrapper != null ? recordWrapper.getAttr(renderedRelativeAttrKeyPathParts) : undefined;
     }
 
     async getRecordItem(recordKey: string): Promise<immutable.RecordOf<T> | undefined> {
@@ -140,43 +124,65 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         );
     }
 
+    private makeAttrsSelectorsByItemsKeys<SelectorItem extends TypedAttrSelector<any, any>>(
+        selectors: { [selectorKey: string]: SelectorItem }
+    ): { [itemKey: string]: { [selectorKey: string]: string[] }} {
+        return _.transform(selectors, (
+            output: { [itemKey: string]: { [selectorKey: string]: string[] } },
+            selectorItem: SelectorItem, selectorKey: string
+        ) => {
+            const renderedAbsoluteAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(selectorItem.attrKeyPath, selectorItem.queryKwargs);
+            const itemKey: string = renderedAbsoluteAttrKeyPathParts[0];
+            const renderedRelativeAttrKeyPathParts: string[] = renderedAbsoluteAttrKeyPathParts.slice(1);
+            // todo: test support for empty renderedRelativeAttrKeyPathParts (does it update the entire record correctly ?)
+
+            const existingContainer: { [selectorKey: string]: string[] } | undefined = output[itemKey];
+            if (existingContainer !== undefined) {
+                existingContainer[selectorKey] = renderedRelativeAttrKeyPathParts;
+            } else {
+                output[itemKey] = {[selectorKey]: renderedRelativeAttrKeyPathParts};
+            }
+        }, {});
+    }
+
+    private makeAttrsSelectorsByItemsKeysARRAY<SelectorItem extends TypedAttrSelector<any, any>>(
+        selectors: SelectorItem[]
+    ): { [itemKey: string]: string[][] } {
+        return _.transform(selectors, (
+            output: { [itemKey: string]: string[][] },
+            selectorItem: SelectorItem
+        ) => {
+            const renderedAbsoluteAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(selectorItem.attrKeyPath, selectorItem.queryKwargs);
+            const itemKey: string = renderedAbsoluteAttrKeyPathParts[0];
+            const renderedRelativeAttrKeyPathParts: string[] = renderedAbsoluteAttrKeyPathParts.slice(1);
+            // todo: test support for empty renderedRelativeAttrKeyPathParts (does it update the entire record correctly ?)
+
+            const existingContainer: string[][] | undefined = output[itemKey];
+            if (existingContainer !== undefined) {
+                existingContainer.push(renderedRelativeAttrKeyPathParts);
+            } else {
+                output[itemKey] = [renderedRelativeAttrKeyPathParts];
+            }
+        }, {});
+    }
+
     async getMultipleAttrs<P extends string>(
-        getters: { [getterKey: string]: TypedFieldGetter<{ [recordKey: string]: T }, P> }
+        getters: { [getterKey: string]: TypedAttrGetter<{ [recordKey: string]: T }, P> }
     // ): Promise<O.Optional<U.Merge<ImmutableCast<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>>>> {
     ): Promise<{ [getterKey: string]: ImmutableCast<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>}> {
-        type GetterItem = { renderedAttrKeyPathParts: string[] };
-        const attrsRelativeGettersByItemsKeys: { [itemKey: string]: { [getterKey: string]: GetterItem } } = (
-            _.transform(getters, (
-                output: { [itemKey: string]: { [getterKey: string]: GetterItem } },
-                getterItem: TypedFieldGetter<{ [recordKey: string]: T }, P>, getterKey: string
-            ) => {
-                const renderedAbsoluteAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(getterItem.attrKeyPath, getterItem.queryKwargs);
-                gettersRenderedAbsoluteAttrKeyPathsParts.push(renderedAbsoluteAttrKeyPathParts);
-
-                const itemKey: string = renderedAbsoluteAttrKeyPathParts[0];
-                const renderedRelativeAttrKeyPathParts: string[] = renderedAbsoluteAttrKeyPathParts.slice(1);
-
-                // todo: test support for empty renderedRelativeAttrKeyPathParts (does it update the entire record correctly ?)
-                const newRelativeGetterItem: GetterItem = {
-                    renderedAttrKeyPathParts: renderedRelativeAttrKeyPathParts,
-                };
-
-                const existingContainer: { [setterKey: string]: GetterItem } | undefined = output[itemKey];
-                if (existingContainer !== undefined) {
-                    existingContainer[getterKey] = newRelativeGetterItem;
-                } else {
-                    output[itemKey] = {[getterKey]: newRelativeGetterItem};
-                }
-            }, {}
-        ));
+        const attrsRelativeGettersByItemsKeys: { [itemKey: string]: { [getterKey: string]: string[] } } = (
+            this.makeAttrsSelectorsByItemsKeys<TypedAttrGetter<{ [recordKey: string]: T }, P>>(getters)
+        );
         const recordsWrappersToRetrieveValuesFrom: { [itemKey: string]: SingleImmutableRecordWrapper<T> | null } = await (
             this.getMultipleRecordItems(Object.keys(attrsRelativeGettersByItemsKeys))
         );
-        const collectedRetrievedValues: { [setterKey: string]: any } = _.transform(attrsRelativeGettersByItemsKeys,
-            (result: { [absoluteAttrKeyPath: string]: any }, relativeGettersToExecute: { [getterKey: string]: GetterItem }, itemKey: string) => {
-                const matchingRecordWrapper: SingleImmutableRecordWrapper<T> | null = recordWrappersRequiringAlterations[itemKey];
+        const collectedRetrievedValues: { [getterKey: string]: any } = _.transform(attrsRelativeGettersByItemsKeys,
+            (result: { [getterKey: string]: any }, relativeGettersToExecute: { [getterKey: string]: string[] }, itemKey: string) => {
+                const matchingRecordWrapper: SingleImmutableRecordWrapper<T> | null = recordsWrappersToRetrieveValuesFrom[itemKey];
                 if (matchingRecordWrapper != null) {
-                    const retrievedValues: { [getterKey: string]: any } = matchingRecordWrapper.getMultipleAttrs(relativeGettersToExecute);
+                    const retrievedValues: { [getterKey: string]: any | undefined } = (
+                        matchingRecordWrapper.getMultipleAttrs(relativeGettersToExecute)
+                    );
                     _.assign(result, retrievedValues);
                 }
             }, {}
@@ -185,35 +191,15 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         // return retrievedValues;  // as U.Merge<ImmutableCast<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>>;
     }
 
-    abstract updateItemWithSubscribersPromise(
-        itemKey: string, itemData: immutable.RecordOf<T>
-    ): Promise<{oldValue: immutable.RecordOf<T> | null, subscribersPromise: Promise<any>}>;
-
-    async updateItem(itemKey: string, itemData: immutable.RecordOf<T>): Promise<immutable.RecordOf<T> | null> {
-        return (await this.updateItemWithSubscribersPromise(itemKey, itemData)).oldValue;
-    }
-
-    updateItemFromData() {
-
-    }
-
     async updateAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P> | string[], value: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>>
+        // attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P> | string[], value: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>>
+        { attrKeyPath, queryKwargs, valueToSet }: TypedImmutableAttrSetter<{ [recordKey: string]: T}, P>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
-        // const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
-        const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);
-        if (relativeAttrKeyPath != null) {
-            const dataWrapper: SingleImmutableRecordWrapper<T> | null = await this.getSingleRecordItem(itemKey);
-            if (dataWrapper != null) {
-                const oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined = dataWrapper.updateAttr(relativeAttrKeyPath, value);
-                const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
-                return {oldValue, subscribersPromise};
-            }
-        } else {
-            return await this.updateItemWithSubscribersPromise(itemKey, value as immutable.RecordOf<T>);
-            /*const oldValue: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>> | undefined = dataWrapper.updateRecord(value as any);
-            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
-            return {oldValue, subscribersPromise};*/
+        const {recordWrapper, renderedRelativeAttrKeyPathParts} = await this.getMatchingDataWrapper<P>(attrKeyPath, queryKwargs);
+        if (recordWrapper != null) {
+            const oldValue: any | undefined = recordWrapper.updateAttr(renderedRelativeAttrKeyPathParts, valueToSet);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(renderedRelativeAttrKeyPathParts);
+            return {oldValue: oldValue as ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>>, subscribersPromise};
         }
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
@@ -225,15 +211,15 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     }
 
     async updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        setters: { [setterKey: string]: TypedSetterItem<{ [recordKey: string]: T }, P> }
+        setters: { [setterKey: string]: TypedAttrSetter<{ [recordKey: string]: T }, P> }
     ): Promise<{ oldValues: { [setterKey: string]: any } | undefined, subscribersPromise: Promise<any> }> {
         type SetterItem = { renderedAttrKeyPathParts: string[], valueToSet: any };
-        // const renderedAttrKeyPathsToSetterKeys: { [renderedAttrKeyPath: string]: string } = {};
+
         const settersRenderedAbsoluteAttrKeyPathsParts: string[][] = [];
         const attrsRelativeSettersByItemsKeys: { [itemKey: string]: { [setterKey: string]: SetterItem } } = (
             _.transform(setters, (
                 output: { [itemKey: string]: { [setterKey: string]: SetterItem } },
-                setterItem: TypedSetterItem<{ [recordKey: string]: T }, P>, setterKey: string
+                setterItem: TypedAttrSetter<{ [recordKey: string]: T }, P>, setterKey: string
             ) => {
                 const renderedAbsoluteAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(setterItem.attrKeyPath, setterItem.queryKwargs);
                 settersRenderedAbsoluteAttrKeyPathsParts.push(renderedAbsoluteAttrKeyPathParts);
@@ -262,7 +248,9 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
             (result: { [absoluteAttrKeyPath: string]: any }, relativeSettersToExecute: { [setterKey: string]: SetterItem }, itemKey: string) => {
                 const matchingRecordWrapper: SingleImmutableRecordWrapper<T> | null = recordWrappersRequiringAlterations[itemKey];
                 if (matchingRecordWrapper != null) {
-                    const oldValues: { [setterKey: string]: any } = matchingRecordWrapper.updateMultipleAttrs(relativeSettersToExecute);
+                    const oldValues: { [setterKey: string]: any | undefined } = (
+                        matchingRecordWrapper.updateMultipleAttrs(relativeSettersToExecute)
+                    );
                     _.assign(result, oldValues);
                 }
             }, {}
@@ -297,19 +285,21 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     }*/
 
     async updateDataToAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P> | TypedAttrGetter<{ [recordKey: string]: T }, P>,
-        value: O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>
-    ): Promise<{ oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }>;
-    async updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<{ [recordKey: string]: T }>>(
+        { attrKeyPath, queryKwargs, valueToSet }: TypedImmutableAttrSetter<{ [recordKey: string]: T }, P>
+    ): Promise<{ oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
+    /*async updateDataToAttrWithReturnedSubscribersPromise<P extends O.Paths<{ [recordKey: string]: T }>>(
         attrKeyPath: P, value: O.Path<{ [recordKey: string]: T }, P>
-    ): Promise<{ oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> | undefined, subscribersPromise: Promise<any> }> {
-        const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(attrKeyPath);
-        const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = relativeAttrKeyPath == null ? this.props.itemModel : (
-            navigateToAttrKeyPathIntoMapModelV2(this.props.itemModel, relativeAttrKeyPath as string)
+    ): Promise<{ oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> | undefined, subscribersPromise: Promise<any> }> {*/
+        const renderedAbsoluteAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(attrKeyPath, queryKwargs);
+        const renderedRelativeAttrKeyPathParts: string[] = renderedAbsoluteAttrKeyPathParts.slice(1);
+        const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = (
+            navigateToAttrKeyPathIntoMapModelV2(this.props.itemModel, renderedRelativeAttrKeyPathParts)
         );
         if (matchingField != null) {
-            const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(value);
-            return await this.updateAttrWithReturnedSubscribersPromise<P>(attrKeyPath, loadedValue);
+            const loadedValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, P>> = matchingField.dataLoader(valueToSet);
+            return await this.updateAttrWithReturnedSubscribersPromise<P>(
+                {attrKeyPath, queryKwargs, valueToSet: loadedValue}
+            );
         } else {
             console.error(`${attrKeyPath} was not a valid path`);
         }
@@ -317,26 +307,27 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     }
 
     async updateDataToMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        setters: { [setterKey: string]: TypedSetterItem<T, P> }
+        setters: { [setterKey: string]: TypedAttrSetter<T, P> }
     ): Promise<{ oldValues: { [setterKey: string]: any | undefined }, subscribersPromise: Promise<any> }> {
-        const loadedSetters: { [setterKey: string]: TypedImmutableSetterItem<T, P> } = (
+        const loadedSetters: { [setterKey: string]: TypedImmutableAttrSetter<T, P> } = (
             _.transform(setters, (
-                output: { [setterKey: string]: TypedImmutableSetterItem<T, P> },
-                setterItem: TypedSetterItem<T, P>, setterKey: string
+                output: { [setterKey: string]: TypedImmutableAttrSetter<T, P> },
+                setterItem: TypedAttrSetter<T, P>, setterKey: string
             ) => {
-                const {itemKey, relativeAttrKeyPath} = this.makeRelativeAttrKeyPath(setterKey);
-                const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null  = (
-                    navigateToAttrKeyPathIntoMapModelV2(this.props.itemModel, relativeAttrKeyPath as string)
+                const renderedAbsoluteAttrKeyPathParts: string[] = separateAttrKeyPathWithQueryKwargs(setterItem.attrKeyPath, setterItem.queryKwargs);
+                const renderedRelativeAttrKeyPathParts: string[] = renderedAbsoluteAttrKeyPathParts.slice(1);
+                const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null = (
+                    navigateToAttrKeyPathIntoMapModelV2(this.props.itemModel, renderedRelativeAttrKeyPathParts)
                 );
                 if (matchingField != null) {
-                    const loadedValue: ImmutableCast<O.Path<T, P>> = matchingField.dataLoader(setterItem.attrKeyPath);
+                    const loadedValue: ImmutableCast<O.Path<T, P>> = matchingField.dataLoader(setterItem.valueToSet);
                     output[setterKey] = {
                         attrKeyPath: setterItem.attrKeyPath,
                         queryKwargs: setterItem.queryKwargs,
                         valueToSet: loadedValue
                     };
                 } else {
-                    console.error(`${mutatorAttrKeyPath} was not a valid path`);
+                    console.error(`${relativeAttrKeyPath} was not a valid path`);
                 }
             }, {})
         );
@@ -344,78 +335,79 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
     }
 
     async deleteAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>
+        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, queryKwargs?: { [argKey: string]: any }
     ): Promise<{ subscribersPromise: Promise<any> }> {
-        const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
-        if (dataWrapper != null) {
-            if (relativeAttrKeyPath != null) {
-                dataWrapper.deleteAttr(relativeAttrKeyPath);
-                const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
-                return {subscribersPromise};
-            } else {
-                // todo: handle null relativeAttrKeyPath
-            }
+        const {recordWrapper, renderedRelativeAttrKeyPathParts} = await this.getMatchingDataWrapper<P>(attrKeyPath, queryKwargs);
+        if (recordWrapper != null) {
+            recordWrapper.deleteAttr(renderedRelativeAttrKeyPathParts);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(renderedRelativeAttrKeyPathParts);
+            return {subscribersPromise};
         }
         return {subscribersPromise: Promise.resolve(undefined)};
     }
 
     async deleteMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        attrsKeyPaths: F.AutoPath<{ [recordKey: string]: T }, P>[]
+        removers: TypedAttrRemover<{ [recordKey: string]: T }, P>[]
     ): Promise<{ subscribersPromise: Promise<any> }> {
-        const attrsRelativeKeyPathsByItemsKeys: { [itemKey: string]: F.AutoPath<T, P>[] } = (
-            this.makeAttrsRelativeKeyPathsByItemsKeys(attrsKeyPaths)
+        const attrsRelativeRemoversByItemsKeys: { [itemKey: string]: string[][] } = (
+            this.makeAttrsSelectorsByItemsKeysARRAY<TypedAttrRemover<{ [recordKey: string]: T }, P>>(removers)
         );
-        const dataWrappers: { [itemKey: string]: SingleImmutableRecordWrapper<T> | null } = await (
-            this.getMultipleRecordItems(Object.keys(attrsRelativeKeyPathsByItemsKeys))
+        const recordWrappers: { [itemKey: string]: SingleImmutableRecordWrapper<T> | null } = await (
+            this.getMultipleRecordItems(Object.keys(attrsRelativeRemoversByItemsKeys))
         );
-        _.forEach(attrsRelativeKeyPathsByItemsKeys, (relativeAttrsKeysPathsToDelete: F.AutoPath<T, P>[], itemKey: string) => {
-            const matchingDataWrapper: SingleImmutableRecordWrapper<T> | null = dataWrappers[itemKey];
-            if (matchingDataWrapper != null) {
-                matchingDataWrapper.deleteMultipleAttrs(relativeAttrsKeysPathsToDelete);
+        const absoluteAlteredAttrsKeyPathParts: string[][] = [];
+        _.forEach(attrsRelativeRemoversByItemsKeys, (relativeRemoversToExecute: string[][], itemKey: string) => {
+            const matchingRecordWrapper: SingleImmutableRecordWrapper<T> | null = recordWrappers[itemKey];
+            if (matchingRecordWrapper != null) {
+                matchingRecordWrapper.deleteMultipleAttrs(relativeRemoversToExecute);
             }
+            _.forEach(relativeRemoversToExecute, (rar: string[]) => {
+                absoluteAlteredAttrsKeyPathParts.push([itemKey, ...rar]);
+            });
         });
-        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(absoluteAlteredAttrsKeyPathParts);
         return {subscribersPromise};
     }
 
     async removeAttrWithReturnedSubscribersPromise<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>
+        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, queryKwargs?: { [argKey: string]: any }
     ): Promise<{ oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
-        const {dataWrapper, relativeAttrKeyPath} = await this.getMatchingDataWrapper<P>(attrKeyPath);
-        if (dataWrapper != null) {
-            if (relativeAttrKeyPath != null) {
-                const oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined = dataWrapper.removeAttr(relativeAttrKeyPath);
-                const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(attrKeyPath);
-                return {oldValue, subscribersPromise};
-            } else {
-                // todo: handle null relativeAttrKeyPath
-            }
+        const {recordWrapper, renderedRelativeAttrKeyPathParts} = await this.getMatchingDataWrapper<P>(attrKeyPath, queryKwargs);
+        if (recordWrapper != null) {
+            const oldValue: ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined = (
+                recordWrapper.removeAttr(renderedRelativeAttrKeyPathParts)
+            );
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(renderedRelativeAttrKeyPathParts);
+            return {oldValue, subscribersPromise};
         }
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
 
     async removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        attrsKeyPaths: F.AutoPath<{ [recordKey: string]: T }, P>[]
+        removers: { [removerKey: string]: TypedAttrRemover<{ [recordKey: string]: T }, P> }
     ): Promise<{ removedValues: U.Merge<ImmutableCast<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, '.'>>>> | undefined, subscribersPromise: Promise<any> }> {
-        const attrsRelativeKeyPathsByItemsKeys: { [itemKey: string]: F.AutoPath<T, P>[] } = (
-            this.makeAttrsRelativeKeyPathsByItemsKeys(attrsKeyPaths)
+        const attrsRelativeKeyPathsByItemsKeys: { [itemKey: string]: { [removerKey: string]: string[] } } = (
+            this.makeAttrsSelectorsByItemsKeys<TypedAttrRemover<{ [recordKey: string]: T }>>(removers)
         );
-        const dataWrappers: { [itemKey: string]: SingleImmutableRecordWrapper<T> | null } = await (
+        const recordWrappers: { [itemKey: string]: SingleImmutableRecordWrapper<T> | null } = await (
             this.getMultipleRecordItems(Object.keys(attrsRelativeKeyPathsByItemsKeys))
         );
-        const collectedOldValues: { [removedAttrKeyPath: string]: any } = _.transform(attrsRelativeKeyPathsByItemsKeys,
-            (result: { [absoluteAttrKeyPath: string]: any }, relativeAttrsKeysPathsToRemove: F.AutoPath<T, P>[], itemKey: string) => {
-                const matchingDataWrapper: SingleImmutableRecordWrapper<T> | null = dataWrappers[itemKey];
-                if (matchingDataWrapper != null) {
-                    const oldValues = matchingDataWrapper.removeMultipleAttrs(relativeAttrsKeysPathsToRemove);
-                    _.forEach(oldValues, (attrOldValue: any, relativeAttrKeyPath: string) => {
-                        const absoluteAttrKeyPath: string = `${itemKey}.${relativeAttrKeyPath}`;
-                        result[absoluteAttrKeyPath] = attrOldValue;
+        const alteredAbsoluteRelativeAttrKeyPaths: string[][] = [];
+        const collectedOldValues: { [removerKey: string]: any } = _.transform(attrsRelativeKeyPathsByItemsKeys,
+            (result: { [removerKey: string]: any }, relativeAttrsKeysPathsToRemove: { [removerKey: string]: string[] }, itemKey: string) => {
+                const matchingRecordWrapper: SingleImmutableRecordWrapper<T> | null = recordWrappers[itemKey];
+                if (matchingRecordWrapper != null) {
+                    const oldValues: { [removerKey: string]: any | undefined } = (
+                        matchingRecordWrapper.removeMultipleAttrs(relativeAttrsKeysPathsToRemove)
+                    );
+                    _.assign(result, oldValues);
+                    _.forEach(relativeAttrsKeysPathsToRemove, (rar1: string[]) => {
+                        alteredAbsoluteRelativeAttrKeyPaths.push([itemKey, ...rar1]);
                     });
                 }
             }, {}
         );
-        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(attrsKeyPaths);
+        const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(alteredAbsoluteRelativeAttrKeyPaths);
         return {removedValues: collectedOldValues as U.Merge<ImmutableCast<O.P.Pick<{ [recordKey: string]: T }, S.Split<P, ".">>>>, subscribersPromise};
     }
 }
