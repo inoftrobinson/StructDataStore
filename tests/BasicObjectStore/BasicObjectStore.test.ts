@@ -371,17 +371,17 @@ describe('BasicObjectStore', () => {
             attrKeyPath: 'container1.field1', callback: () => {
                 listenersTriggersCounter += 1;
             }
-        );
+        });
         store.subscribeToAttr({
             attrKeyPath: 'container1.field2', callback: () => {
                 listenersTriggersCounter += 1;
             }
-        );
+        });
         store.subscribeToAttr({
             attrKeyPath: 'container2.field1', callback: () => {
                 listenersTriggersCounter += 1;
             }
-        );
+        });
         await store.updateMultipleAttrs({
             'setter1': {attrKeyPath: 'container1.field1', valueToSet: "c1.f1.alteration2"},
             'setter2': {attrKeyPath: 'container1.field2', valueToSet: "c1.f2.alteration2"},

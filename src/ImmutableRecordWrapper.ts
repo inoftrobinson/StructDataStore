@@ -1,46 +1,34 @@
-import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
 import * as immutable from 'immutable';
-import {loadObjectDataToImmutableValuesWithFieldsModel} from "../DataProcessors";
-import {MapModel} from "../ModelsFields";
-import {
-    navigateToAttrKeyPathIntoMapModel,
-    navigateToAttrKeyPathIntoMapModelV2,
-    navigateToAttrKeyPathPartsIntoMapModel
-} from "../utils/fieldsNavigation";
-import {
-    separateAttrKeyPath,
-    separateAttrKeyPathWithQueryKwargs,
-    separatePotentialGetterWithQueryKwargs
-} from "../utils/attrKeyPaths";
-import {PrimitiveAttrGetter, TypedAttrGetter} from "../models";
-import BaseImmutableRecordWrapper from "./BaseImmutableRecordWrapper";
+import {MapModel} from "./ModelsFields";
+import {loadObjectDataToImmutableValuesWithFieldsModel} from "./DataProcessors";
+import {navigateToAttrKeyPathPartsIntoMapModel} from "./utils/fieldsNavigation";
 
 
-export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }> extends BaseImmutableRecordWrapper {
+export default class ImmutableRecordWrapper<T extends { [p: string]: any }> {
     constructor(
         public RECORD_DATA: immutable.RecordOf<T>,
         public readonly itemModel: MapModel
     ) {
-        super();
+
     }
 
     static fromRecord<T extends {}>(itemModel: MapModel, record: immutable.RecordOf<T>) {
-        return new SingleImmutableRecordWrapper<T>(record, itemModel);
+        return new ImmutableRecordWrapper<T>(record, itemModel);
     }
 
     static fromData<T extends {}>(itemModel: MapModel, data: T) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel(data, itemModel) as immutable.RecordOf<T>;
-        return new SingleImmutableRecordWrapper<T>(record, itemModel);
+        return new ImmutableRecordWrapper<T>(record, itemModel);
     }
 
     static fromEmpty<T extends {}>(itemModel: MapModel) {
         const record: immutable.RecordOf<T> = loadObjectDataToImmutableValuesWithFieldsModel({}, itemModel) as immutable.RecordOf<T>;
-        return new SingleImmutableRecordWrapper<T>(record, itemModel);
+        return new ImmutableRecordWrapper<T>(record, itemModel);
     }
 
     /*static fromNull<T>() {
-        return new SingleImmutableRecordWrapper<T>();
+        return new ImmutableRecordWrapper<T>();
     }*/
 
     updateRecord(record: immutable.RecordOf<T>): immutable.RecordOf<T> {
@@ -131,30 +119,6 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
         return this.RECORD_DATA.getIn(renderedAttrKeyPathParts);
     }
 
-    // getMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): U.Merge<O.P.Pick<T, S.Split<P, ".">>> {
-    /*getMultipleAttrs(getters: (string | PrimitiveAttrGetter)[]): { [attrKeyPath: string]: any };
-    getMultipleAttrs(getters: { [getterKey: string]: string | PrimitiveAttrGetter }): { [getterKey: string]: any } {
-        const retrievedValues: { [p: string]: any } = (
-            _.isArray(getters) ? _.transform(
-                getters, (output: { [renderedAttrKeyPath: string]: any }, getterItem: string | PrimitiveAttrGetter) => {
-                    const attrKeyPathElements: string[] = separatePotentialGetterWithQueryKwargs(getterItem);
-                    const renderedAttrKeyPath: string = attrKeyPathElements.join('.');
-                    output[renderedAttrKeyPath] = this.RECORD_DATA.getIn(attrKeyPathElements);
-                }, {}
-            ) : _.isPlainObject(getters) ? _.transform(
-                getters, (output: { [getterKey: string]: any }, getterItem: string | PrimitiveAttrGetter, getterKey: string) => {
-                    const attrKeyPathElements: string[] = separatePotentialGetterWithQueryKwargs(getterItem);
-                    output[getterKey] = this.RECORD_DATA.getIn(attrKeyPathElements);
-                }, {}
-            ) : (() => {
-                console.error('getters were not an array or an object, and could not be used.');
-                console.error(getters);
-                return {};
-            })()
-        );
-        return retrievedValues;
-    }*/
-
     getMultipleAttrs(getters: { [getterKey: string]: string[] }): { [getterKey: string]: any } {
         const retrievedValues: { [getterKey: string]: any } = _.mapValues(
             getters, (getterRenderedAttrKeyPathParts: string[], getterKey: string) => {
@@ -200,7 +164,7 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
         if (!(settersKeys.length > 0)) {
             return {};
         }
-        let alteredRecordData: immutable.RecordOf<T> = this.safeInstantiatePath();
+        let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
         const oldValues: { [setterKey: string]: any | undefined } = _.mapValues(
             setters, (setterItem: { renderedAttrKeyPathParts: string[], valueToSet: any }, setterKey: string) => {
                 const immutableValue: any = immutable.fromJS(setterItem.valueToSet);

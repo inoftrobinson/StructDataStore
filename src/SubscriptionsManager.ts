@@ -1,6 +1,5 @@
 import * as _ from 'lodash';
 import {BaseStore} from "./Stores/BaseStore";
-import {separateAttrKeyPath} from "./utils/attrKeyPaths";
 import {asyncTriggerSubscribers} from "./utils/async";
 import {resolveResultOrPromiseOrCallbackResultOrCallbackPromise} from "./utils/executors";
 
@@ -128,6 +127,7 @@ export default class SubscriptionsManager<T> {
 
     async triggerAllSubscribers(): Promise<void> {
         /* Trigger subscribers for all attributes and object wide */
+        // todo: fix
         await this.triggerSubscribersForMultipleAttrs(Object.keys(this.attrSubscribers));
     }
 

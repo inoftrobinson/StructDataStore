@@ -4,14 +4,13 @@ import {F, O, S, U} from 'ts-toolbelt';
 import {BaseObjectStore, BaseObjectStoreProps} from "./BaseObjectStore";
 import {loadObjectDataToImmutableValuesWithFieldsModel} from "../../DataProcessors";
 import {BasicFieldModel, MapModel, TypedDictFieldModel} from "../../ModelsFields";
-import SingleImmutableRecordWrapper from "../../ImmutableRecordWrappers/SingleImmutableRecordWrapper";
+import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
 import {
     ImmutableCast,
     ObjectFlattenedRecursiveMutatorsResults,
     ObjectOptionalFlattenedRecursiveMutators
 } from "../../types";
 import {
-    navigateToAttrKeyPathIntoMapModelV2,
     navigateToAttrKeyPathPartsIntoMapModel
 } from "../../utils/fieldsNavigation";
 import {
@@ -23,8 +22,6 @@ import {
 } from "../../models";
 import {
     renderAttrKeyPathWithQueryKwargs,
-    separateAttrKeyPathWithQueryKwargs,
-    separatePotentialGetterWithQueryKwargs
 } from "../../utils/attrKeyPaths";
 import {at} from "lodash";
 import {RenderedTypedAttrSetter, RenderedTypedImmutableAttrSetter} from "../../internalModels";
@@ -40,24 +37,24 @@ export interface BasicObjectStoreProps<T> extends BaseObjectStoreProps {
 export
 // @ts-ignore
 class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T> {
-    public RECORD_WRAPPER?: SingleImmutableRecordWrapper<T>;
-    private pendingRetrievalPromise?: Promise<SingleImmutableRecordWrapper<T> | null>;
+    public RECORD_WRAPPER?: ImmutableRecordWrapper<T>;
+    private pendingRetrievalPromise?: Promise<ImmutableRecordWrapper<T> | null>;
 
     constructor(public readonly props: BasicObjectStoreProps<T>) {
         super(props);
     }
 
-    retrieveAndCacheData(): Promise<SingleImmutableRecordWrapper<T> | null>  {
+    retrieveAndCacheData(): Promise<ImmutableRecordWrapper<T> | null>  {
         if (this.pendingRetrievalPromise !== undefined) {
             return this.pendingRetrievalPromise;
         } else {
-            const retrievalPromise: Promise<SingleImmutableRecordWrapper<T> | null> = this.props.retrieveDataCallable().then((result: RetrieveDataCallablePromiseResult<T>) => {
+            const retrievalPromise: Promise<ImmutableRecordWrapper<T> | null> = this.props.retrieveDataCallable().then((result: RetrieveDataCallablePromiseResult<T>) => {
                 this.pendingRetrievalPromise = undefined;
                 if (result.success) {
                     const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(
                         result.data, this.props.objectModel
                     ) as immutable.RecordOf<T>;
-                    this.RECORD_WRAPPER = new SingleImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
+                    this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
                     this.triggerSubscribers();
                     return this.RECORD_WRAPPER;
                 } else {
@@ -70,7 +67,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         }
     }
 
-    async getRecordWrapper(): Promise<SingleImmutableRecordWrapper<T> | null> {
+    async getRecordWrapper(): Promise<ImmutableRecordWrapper<T> | null> {
         return this.RECORD_WRAPPER !== undefined ? this.RECORD_WRAPPER : this.retrieveAndCacheData();
     }
 
@@ -79,7 +76,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
             parsedData, this.props.objectModel
         ) as immutable.RecordOf<T>;
         if (recordItem != null) {
-            this.RECORD_WRAPPER = new SingleImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
+            this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
             const subscribersPromise: Promise<any> = this.triggerSubscribers();
             return {subscribersPromise};
         }
@@ -90,7 +87,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         renderedAttrKeyPathParts: string[]
     ): Promise<ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined> {
     // async getAttr<P extends O.Paths<T>>(attrKeyPath: P, queryKwargs?: { [argKey: string]: any }): Promise<ImmutableCast<O.Path<T, P>> | undefined> {
-        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         return recordWrapper != null ? recordWrapper.getAttr(renderedAttrKeyPathParts) : undefined;
     }
 
@@ -101,14 +98,14 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         getters: { [getterKey: string]: string[] }
     ): Promise<{ [getterKey: string]: any | undefined }> {
     // Promise<O.Nullable<U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, ".">>>>>> {
-        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         return recordWrapper != null ? recordWrapper.getMultipleAttrs(getters) : {};  // as O.Nullable<U.Merge<O.P.Pick<T, S.Split<P, ".">>>>;
     }
 
     protected async _updateAttrWithReturnedSubscribersPromise<P extends string>(
         renderedAttrKeyPathParts: string[], valueToSet: ImmutableCast<F.AutoPath<T, P>>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
-        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const oldValue: O.Path<T, S.Split<P, '.'>> | undefined = recordWrapper.updateAttr(renderedAttrKeyPathParts, valueToSet);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(renderedAttrKeyPathParts);
@@ -120,7 +117,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     /*async updateMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
         mutators: M
     ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined, subscribersPromise: Promise<any> }> {
-        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const oldValues: { [attrKeyPath: string]: any } = recordWrapper.updateMultipleAttrs(mutators);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(Object.keys(mutators));
@@ -132,7 +129,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     protected async _updateMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         setters: { [setterKey: string]: RenderedTypedImmutableAttrSetter<T, P> }
     ): Promise<{ oldValues: { [setterKey: string]: any | undefined }, subscribersPromise: Promise<any> }> {
-        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const mutatorsRenderedAttrKeyPathsParts: string[][] = [];
             const oldValues: { [setterKey: string]: any | undefined } = _.mapValues(setters, (setterItem: RenderedTypedImmutableAttrSetter<T, P>) => {
@@ -166,25 +163,6 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return {oldValue: undefined, subscribersPromise: Promise.resolve(undefined)};
     }
 
-    /*async _updateDataToMultipleAttrsWithReturnedSubscribersPromise<M extends ObjectOptionalFlattenedRecursiveMutators<T>>(
-        mutators: M
-    ): Promise<{ oldValues: ObjectFlattenedRecursiveMutatorsResults<T, M> | undefined; subscribersPromise: Promise<any> }> {
-        // todo: update this function
-        const loadedMutators: { [mutatorAttrKeyPath: string]: ImmutableCast<any> } = (
-            _.transform(mutators, (output: { [mutatorAttrKeyPath: string]: ImmutableCast<any> }, mutatorValue: any, mutatorAttrKeyPath) => {
-                const matchingField: BasicFieldModel | TypedDictFieldModel | MapModel | null  = (
-                    navigateToAttrKeyPathIntoMapModelV2(this.props.objectModel, mutatorAttrKeyPath as string)
-                );
-                if (matchingField != null) {
-                    output[mutatorAttrKeyPath] = matchingField.dataLoader(mutatorValue);
-                } else {
-                    console.error(`${mutatorAttrKeyPath} was not a valid path`);
-                }
-            })
-        );
-        return await this.updateMultipleAttrsWithReturnedSubscribersPromise<M>(loadedMutators);
-    }*/
-
     async _updateDataToMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         setters: { [setterKey: string]: RenderedTypedAttrSetter<T, P> }
     ): Promise<{ oldValues: { [setterKey: string]: any | undefined }, subscribersPromise: Promise<any> }> {
@@ -208,7 +186,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     async _deleteAttrWithReturnedSubscribersPromise<P extends string>(
         renderedAttrKeyPathParts: string[]
     ): Promise<{ subscribersPromise: Promise<any> }> {
-        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             recordWrapper.deleteAttr(renderedAttrKeyPathParts);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(renderedAttrKeyPathParts);
@@ -220,7 +198,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     protected async _deleteMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         removersRenderedAttrsKeyPathsParts: string[][]
     ): Promise<{ subscribersPromise: Promise<any> }> {
-        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             recordWrapper.deleteMultipleAttrs(removersRenderedAttrsKeyPathsParts);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(removersRenderedAttrsKeyPathsParts);
@@ -232,7 +210,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     protected async _removeAttrWithReturnedSubscribersPromise<P extends string>(
         renderedAttrKeyPathParts: string[]
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
-        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const oldValue = recordWrapper.removeAttr(renderedAttrKeyPathParts);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForAttr(renderedAttrKeyPathParts);
@@ -244,7 +222,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     protected async _removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
         renderedRemovers: { [removerKey: string]: string[] }
     ): Promise<{ removedValues: U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>> | undefined; subscribersPromise: Promise<any> }> {
-        const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
             const renderedAttrsKeyPathsParts: string[][] = _.flatten(_.values(renderedRemovers));
             const removedValues = recordWrapper.removeMultipleAttrs(renderedAttrsKeyPathsPartsRemovers);
