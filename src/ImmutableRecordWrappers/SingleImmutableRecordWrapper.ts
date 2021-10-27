@@ -254,17 +254,15 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
     }
 
     // removeMultipleAttrs<P extends string>(attrsKeyPaths: F.AutoPath<T, P>[]): U.Merge<O.P.Pick<T, S.Split<P, ".">>> | undefined {
-    removeMultipleAttrs(attrsKeyPaths: string[]): any | undefined {
-        if (!(attrsKeyPaths.length > 0)) {
-            return {};
-        }
+    removeMultipleAttrs(removers: { [removerKey: string]: string[] }): any | undefined {
         let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
-        const oldValues: { [attrKeyPath: string]: any | undefined } = _.transform(attrsKeyPaths, (result: {}, attrKeyPath: string) => {
-            const attrKeyPathElements: string[] = separateAttrKeyPath(attrKeyPath);
-            const oldValue: any = this.RECORD_DATA.getIn(attrKeyPathElements);
-            alteredRecordData = alteredRecordData.deleteIn(attrKeyPathElements);
-            return oldValue;
-        });
+        const oldValues: { [removerKey: string]: any | undefined } = _.transform(removers,
+            (result: { [removerKey: string]: any | undefined }, setterRenderedAttrKeyPathParts: string[], setterKey: string) => {
+                const oldValue: any = this.RECORD_DATA.getIn(setterRenderedAttrKeyPathParts);
+                alteredRecordData = alteredRecordData.deleteIn(setterRenderedAttrKeyPathParts);
+                result[setterKey] = oldValue;
+            }
+        );
         this.RECORD_DATA = alteredRecordData;
         return oldValues;
     }

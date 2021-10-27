@@ -254,14 +254,15 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
     }
 
     async removeMultipleAttrsWithReturnedSubscribersPromise<P extends string>(
-        removers: TypedAttrRemover<T, P>[]
+        removers: { [removerKey: string]: TypedAttrRemover<T, P> }
     ): Promise<{ removedValues: U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>> | undefined; subscribersPromise: Promise<any> }> {
         const recordWrapper: SingleImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            const renderedAttrsKeyPathsParts: string[][] = _.map(removers, (removerItem: TypedAttrRemover<T, P>) => {
+            const renderedAttrsKeyPathsPartsRemovers: { [removerKey: string]: string[] } = _.mapValues(removers, (removerItem: TypedAttrRemover<T, P>) => {
                 return separateAttrKeyPathWithQueryKwargs(removerItem.attrKeyPath, removerItem.queryKwargs);
             });
-            const removedValues = recordWrapper.removeMultipleAttrs(renderedAttrsKeyPathsParts);
+            const renderedAttrsKeyPathsParts: string[][] = _.flatten(_.values(renderedAttrsKeyPathsPartsRemovers));
+            const removedValues = recordWrapper.removeMultipleAttrs(renderedAttrsKeyPathsPartsRemovers);
             const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(renderedAttrsKeyPathsParts);
             return {removedValues, subscribersPromise};
         }

@@ -284,17 +284,34 @@ export async function simpleRemoveMultipleAttrs(storeFactory: StoreFactory) {
             'container2': {'field1': "c2.f1", 'field2': "c2.f2"}
         }
     });
-    const removedValues = await store.removeMultipleAttrs([
-        {attrKeyPath: '{{recordKey}}.container1.field1', queryKwargs: {'recordKey': "record1"}},
-        {attrKeyPath: '{{recordKey}}.container1.field2', queryKwargs: {'recordKey': "record1"}},
-        {attrKeyPath: '{{recordKey}}.container2.field1', queryKwargs: {'recordKey': "record1"}},
-    ]);
+    const removedValues = await store.removeMultipleAttrs({
+        'remover1': {attrKeyPath: '{{recordKey}}.container1.field1', queryKwargs: {'recordKey': "record1"}},
+        'remover2': {attrKeyPath: '{{recordKey}}.container1.field2', queryKwargs: {'recordKey': "record1"}},
+        'remover3': {attrKeyPath: '{{recordKey}}.container2.field1', queryKwargs: {'recordKey': "record1"}},
+    });
+    expect(removedValues).toEqual({
+        'remover1': "c1.f1",
+        'remover2': "c1.f2",
+        'remover3': "c2.f1",
+    });
 
     const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs({
-        'getter1': {attrKeyPath: '{{recordKey}}.container1.field1', queryKwargs: {'recordKey': "record1"},
-        'getter2': {attrKeyPath: '{{recordKey}}.container1.field2', queryKwargs: {'recordKey': "record1"},
-        'getter3': {attrKeyPath: '{{recordKey}}.container2.field1', queryKwargs: {'recordKey': "record1"},
-        'getter4': {attrKeyPath: '{{recordKey}}.container2.field2', queryKwargs: {'recordKey': "record1"}
+        'getter1': {
+            attrKeyPath: '{{recordKey}}.container1.field1',
+            queryKwargs: {'recordKey': "record1"}
+        },
+        'getter2': {
+            attrKeyPath: '{{recordKey}}.container1.field2',
+            queryKwargs: {'recordKey': "record1"}
+        },
+        'getter3': {
+            attrKeyPath: '{{recordKey}}.container2.field1',
+            queryKwargs: {'recordKey': "record1"}
+        },
+        'getter4': {
+            attrKeyPath: '{{recordKey}}.container2.field2',
+            queryKwargs: {'recordKey': "record1"}
+        }
     });
     expect(retrievedFieldsValuesAfterUpdate).toEqual({
         'getter1': undefined,
