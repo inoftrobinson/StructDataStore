@@ -12,7 +12,7 @@ export type StoreFactory = <T>(itemModel: MapModel) => BasicItemsObjectStore<T> 
 
 function basicObjectStoreFactory<T>(objectModel: MapModel): BasicObjectStore<T> {
     return new BasicObjectStore<T>({
-        retrieveDataCallable: () => Promise.resolve({success: true, data: {}}), objectModel
+        retrieveDataCallable: () => Promise.resolve({success: true, data: {} as T}), objectModel
     });
 }
 
@@ -62,13 +62,15 @@ describe('BasicObjectStore', () => {
             'container1': {'field1': "c1.f1", 'field2': "c1.f2"},
             'container2': {'field1': "c2.f1", 'field2': "c2.f2"},
         });
-        const retrievedFieldsValues: {} = await store.getMultipleAttrs([
-            'container1.field1', 'container1.field2', 'container2.field1'
-        ]);
+        const retrievedFieldsValues: {} = await store.getMultipleAttrs({
+            'getter1': {attrKeyPath: 'container1.field1'},
+            'getter2': {attrKeyPath: 'container1.field2'},
+            'getter3': {attrKeyPath: 'container2.field1'}
+        });
         expect(retrievedFieldsValues).toEqual({
-            'container1.field1': "c1.f1",
-            'container1.field2': "c1.f2",
-            'container2.field1': "c2.f1",
+            'getter1': "c1.f1",
+            'getter2': "c1.f2",
+            'getter3': "c2.f1",
         });
     });
 
@@ -87,7 +89,9 @@ describe('BasicObjectStore', () => {
         );
         store.loadFromData({'container1': {'field1': "c1.f1.alteration1"}});
 
-        const oldValue: string | undefined = await store.updateAttr('container1.field1', "c1.f1.alteration2");
+        const oldValue: string | undefined = await store.updateAttr({
+            attrKeyPath: 'container1.field1', valueToSet: "c1.f1.alteration2"
+        });
         expect(oldValue).toEqual("c1.f1.alteration1");
 
         const retrievedNewValue: string | undefined = await store.getAttr('container1.field1');
@@ -133,14 +137,22 @@ describe('BasicObjectStore', () => {
             'setter3': "c2.f1.alteration1",
         });
 
-        const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([
-            'container1.field1', 'container1.field2', 'container2.field1', 'container2.field2'
-        ]);
+        const retrievedFieldsValuesAfterUpdate: {
+            'getter1': string | undefined,
+            'getter2': string | undefined,
+            'getter3': string | undefined,
+            'getter4': string | undefined,
+        } = await store.getMultipleAttrs({
+            'getter1': {attrKeyPath: 'container1.field1'},
+            'getter2': {attrKeyPath: 'container1.field2'},
+            'getter3': {attrKeyPath: 'container2.field1'},
+            'getter4': {attrKeyPath: 'container2.field2'}
+        });
         expect(retrievedFieldsValuesAfterUpdate).toEqual({
-            'container1.field1': "c1.f1.alteration2",
-            'container1.field2': "c1.f2.alteration2",
-            'container2.field1': "c2.f1.alteration2",
-            'container2.field2': "c2.f2.alteration1",
+            'getter1': "c1.f1.alteration2",
+            'getter2': "c1.f2.alteration2",
+            'getter3': "c2.f1.alteration2",
+            'getter4': "c2.f2.alteration1",
         });
     });
 
@@ -195,17 +207,22 @@ describe('BasicObjectStore', () => {
             'container2': {'field1': "c2.f1", 'field2': "c2.f2"},
         });
         await store.deleteMultipleAttrs([
-            'container1.field1', 'container1.field2', 'container2.field1'
+            {attrKeyPath: 'container1.field1'},
+            {attrKeyPath: 'container1.field2'},
+            {attrKeyPath: 'container2.field1'}
         ]);
 
-        const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([
-            'container1.field1', 'container1.field2', 'container2.field1', 'container2.field2'
-        ]);
+        const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs({
+            'getter1': {attrKeyPath: 'container1.field1'},
+            'getter2': {attrKeyPath: 'container1.field2'},
+            'getter3': {attrKeyPath: 'container2.field1'},
+            'getter4': {attrKeyPath: 'container2.field2'}
+        });
         expect(retrievedFieldsValuesAfterUpdate).toEqual({
-            'container1.field1': undefined,
-            'container1.field2': undefined,
-            'container2.field1': undefined,
-            'container2.field2': "c2.f2",
+            'getter1': undefined,
+            'getter12': undefined,
+            'getter3': undefined,
+            'getter4': "c2.f2",
         });
     });
 
@@ -262,16 +279,21 @@ describe('BasicObjectStore', () => {
             'container2': {'field1': "c2.f1", 'field2': "c2.f2"},
         });
         await store.deleteMultipleAttrs([
-            'container1.field1', 'container1.field2', 'container2.field1'
+            {attrKeyPath: 'container1.field1'},
+            {attrKeyPath: 'container1.field2'},
+            {attrKeyPath: 'container2.field1'}
         ]);
 
-        const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs([
-            'container1.field1', 'container1.field2', 'container2.field1', 'container2.field2'
-        ]);
+        const retrievedFieldsValuesAfterUpdate: {} = await store.getMultipleAttrs({
+            'getter1': {attrKeyPath: 'container1.field1'},
+            'getter2': {attrKeyPath: 'container1.field2'},
+            'getter3': {attrKeyPath: 'container2.field1'},
+            'getter4': {attrKeyPath: 'container2.field2'}
+        });
         expect(retrievedFieldsValuesAfterUpdate).toEqual({
-            'container1.field1': undefined,
-            'container1.field2': undefined,
-            'container2.field1': undefined,
+            'getter1': undefined,
+            'getter2': undefined,
+            'getter3': undefined,
             'container2.field2': "c2.f2",
         });
     });
@@ -303,16 +325,17 @@ describe('BasicObjectStore', () => {
         });
 
         let listenersTriggersCounter: number = 0;
-        store.subscribeMultipleAttrs(
-            ['container1.field1', 'container1.field2', 'container2.field1'],
-            () => {
-                listenersTriggersCounter += 1;
-            }
-        );
+        store.subscribeMultipleAttrs([
+            {attrKeyPath: 'container1.field1'},
+            {attrKeyPath: 'container1.field2'},
+            {attrKeyPath: 'container2.field1'}
+        ],() => {
+            listenersTriggersCounter += 1;
+        });
         await store.updateMultipleAttrs({
-            'container1.field1': "c1.f1.alteration2",
-            'container1.field2': "c1.f2.alteration2",
-            'container2.field1': "c2.f1.alteration2",
+            'setter1': {attrKeyPath: 'container1.field1', valueToSet: "c1.f1.alteration2"},
+            'setter2': {attrKeyPath: 'container1.field2', valueToSet: "c1.f2.alteration2"},
+            'setter3': {attrKeyPath: 'container2.field1', valueToSet: "c2.f1.alteration2"},
         });
         expect(listenersTriggersCounter).toEqual(1);
     });
@@ -344,19 +367,25 @@ describe('BasicObjectStore', () => {
         });
 
         let listenersTriggersCounter: number = 0;
-        store.subscribeToAttr('container1.field1',() => {
-            listenersTriggersCounter += 1;
-        });
-        store.subscribeToAttr('container1.field2',() => {
-            listenersTriggersCounter += 1;
-        });
-        store.subscribeToAttr('container2.field1',() => {
-            listenersTriggersCounter += 1;
-        });
+        store.subscribeToAttr({
+            attrKeyPath: 'container1.field1', callback: () => {
+                listenersTriggersCounter += 1;
+            }
+        );
+        store.subscribeToAttr({
+            attrKeyPath: 'container1.field2', callback: () => {
+                listenersTriggersCounter += 1;
+            }
+        );
+        store.subscribeToAttr({
+            attrKeyPath: 'container2.field1', callback: () => {
+                listenersTriggersCounter += 1;
+            }
+        );
         await store.updateMultipleAttrs({
-            'container1.field1': "c1.f1.alteration2",
-            'container1.field2': "c1.f2.alteration2",
-            'container2.field1': "c2.f1.alteration2",
+            'setter1': {attrKeyPath: 'container1.field1', valueToSet: "c1.f1.alteration2"},
+            'setter2': {attrKeyPath: 'container1.field2', valueToSet: "c1.f2.alteration2"},
+            'setter3': {attrKeyPath: 'container2.field1', valueToSet: "c2.f1.alteration2"},
         });
         expect(listenersTriggersCounter).toEqual(3);
     });
@@ -375,7 +404,7 @@ describe('BasicObjectStore', () => {
             }})
         );
 
-        await store.updateDataToAttr('container1', {'field1': "c1.f1"});
+        await store.updateDataToAttr({attrKeyPath: 'container1', valueToSet: {'field1': "c1.f1"}});
         const retrievedContainer1: immutable.RecordOf<{ field1: string }> | undefined = await store.getAttr('container1');
         expect(retrievedContainer1?.toJS()).toEqual({'field1': "c1.f1"});
     });
@@ -401,13 +430,13 @@ describe('BasicObjectStore', () => {
         );
 
         await store.updateDataToMultipleAttrs({
-            'container1.field1': "c1.f1",
-            'container2.field1': "c2.f1"
+            'setter1': {attrKeyPath: 'container1.field1', valueToSet: "c1.f1"},
+            'setter2': {attrKeyPath: 'container2.field1', valueToSet: "c2.f1"}
         });
         const retrievedContainers: {
             container1: immutable.RecordOf<{field1: string}> | undefined,
             container2: immutable.RecordOf<{field1: string}> | undefined,
-        } = await store.getMultipleAttrs(['container1', 'container2']);
+        } = await store.getMultipleAttrs([{attrKeyPath: 'container1'}, {attrKeyPath: 'container2'}]);
         expect(retrievedContainers.container1?.toJS()).toEqual({'field1': "c1.f1"});
         expect(retrievedContainers.container2?.toJS()).toEqual({'field1': "c2.f1"});
     });
@@ -426,7 +455,7 @@ describe('BasicObjectStore', () => {
         );
         store.loadFromData({items: {}});
 
-        await store.updateDataToAttr('items.item42A', "i1.i42A");
+        await store.updateDataToAttr({attrKeyPath: 'items.item42A', valueToSet: "i1.i42A"});
         const retrievedItem: any | undefined = await store.getAttr('items.item42A');
         expect(retrievedItem).toEqual("i1.i42A");
     });
@@ -448,19 +477,33 @@ describe('BasicObjectStore', () => {
         store.loadFromData({items: {}});
 
         await store.updateDataToMultipleAttrs({
-            'items.item42A': "i1.i42A",
-            'items.item42B': "i2.i42B"
+            'setter1': {
+                attrKeyPath: 'items.{{itemKey}}',
+                queryKwargs: {'itemKey': "item42A"},
+                valueToSet: "i1.i42A"
+            },
+            'setter2': {
+                attrKeyPath: 'items.{{itemKey}}',
+                queryKwargs: {'itemKey': "item42B"},
+                valueToSet: "i2.i42B"
+            }
         });
         const retrievedItems: {
-            'items.item42A': string | undefined,
-            'items.item42B': string | undefined,
-        } = await store.getMultipleAttrs([
-            'items.item42A',
-            'items.item42B'
-        ]);
+            'getter1': string | undefined,
+            'getter2': string | undefined,
+        } = await store.getMultipleAttrs({
+            'getter1': {
+                attrKeyPath: 'items.{{itemKey}}',
+                queryKwargs: {'itemKey': "item42A"}
+            },
+            'getter2': {
+                attrKeyPath: 'items.{{itemKey}}',
+                queryKwargs: {'itemKey': "item42B"}
+            }
+        });
         expect(retrievedItems).toEqual({
-            'items.item42A': "i1.i42A",
-            'items.item42B': "i2.i42B"
+            'getter1': "i1.i42A",
+            'getter2': "i2.i42B"
         });
     });
 });
