@@ -100,14 +100,14 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
                                     if (recordWrapper != null) {
                                         this.RECORD_WRAPPERS[recordKey] = recordWrapper;
                                         // this.triggerSubscribersForKey(recordKey);
-                                        this.triggerSubscribersForAttr(recordKey);
+                                        this.subscriptionsManager.triggerSubscribersForAttr([recordKey]);
                                         return recordWrapper;
                                     }
                                 }
                             }
                             this.props.onItemRetrievalFailure?.(metadata);
                             // this.triggerSubscribersForKey(recordKey);
-                            this.triggerSubscribersForAttr(recordKey);
+                            this.subscriptionsManager.triggerSubscribersForAttr([recordKey]);
                             return null;
                         })
                     );

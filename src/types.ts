@@ -31,10 +31,10 @@ export type ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast<A exten
     O.Optional<{ [K in ObjectFlattenedRecursiveKeys<A>]: O.Path<A, S.Split<K, '.'>> }>
 );
 
-type JoinedPaths<T> = S.Join<O.Paths<T>, '.'>;
+/*type JoinedPaths<T> = S.Join<O.Paths<T>, '.'>;
 const paths = O.Paths<{ container: { field1: number}, container2: { field1: number } }> = null as any;
 const joinedPaths: JoinedPaths<{ container: { field1: number}, container2: { field1: number } }> = null as any;
-joinedPaths
+joinedPaths*/
 
 export type ObjectOptionalFlattenedRecursiveMutatorsWithSetterKeys<
     T extends { [p: string]: any }, S extends { [setterKey: string]: TypedAttrSetter<T, any> }

@@ -437,8 +437,8 @@ export async function listenersSeparation(storeFactory: StoreFactory) {
 
 export async function simpleUpdateDataToAttr(storeFactory: StoreFactory) {
     interface StoreItemModel {
-        value: string;
-        container: {
+        value?: string;
+        container?: {
             field1: string;
         },
     }
@@ -450,6 +450,7 @@ export async function simpleUpdateDataToAttr(storeFactory: StoreFactory) {
             }}),
         }})
     );
+    await store.loadFromData({'record1': {}});
 
     await store.updateDataToAttr({
         attrKeyPath: '{{recordKey}}',
