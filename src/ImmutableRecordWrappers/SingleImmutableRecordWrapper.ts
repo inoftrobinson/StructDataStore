@@ -164,11 +164,33 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
         return retrievedValues;
     }
 
+    private safeInstantiatePath(renderedAttrKeyPathParts: string[], alteredRecordData: immutable.RecordOf<T>) {
+        for (let i=0; i < renderedAttrKeyPathParts.length - 1; i++) {
+            const currentPathElements: string[] = renderedAttrKeyPathParts.slice(0, i+1);
+            const fieldModel = navigateToAttrKeyPathPartsIntoMapModel(this.itemModel, currentPathElements);
+            if (fieldModel != null) {
+                const retrievedItem = alteredRecordData.getIn(currentPathElements);
+                if (retrievedItem === undefined) {
+                    alteredRecordData = alteredRecordData.setIn(currentPathElements, fieldModel.makeDefault());
+                    // todo: stop using customDefaultValue and use a factory (for list's, map's and record's ?)
+                }
+            }
+        }
+        return alteredRecordData;
+        // navigateToAttrKeyPathIntoMapModelV2(this.itemModel, currentAttrKeyPath, ());
+        /*_.forEach(attrKeyPathElements.slice(0, -1), (attrKeyPathPart: string, index: number) => {
+            const parts = attrKeyPathElements.slice(0, index + 1);
+            navigateToAttrKeyPathIntoMapModelV2(this.itemModel, )
+            const item = alteredRecordData.getIn()
+        });*/
+    }
+
     // updateAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>, value: any): O.Path<T, S.Split<P, '.'>> | undefined {
     updateAttr(renderedAttrKeyPathParts: string[], value: any): any | undefined {
         const immutableValue: any = immutable.fromJS(value);
         const oldValue: any = this.RECORD_DATA.getIn(renderedAttrKeyPathParts);
-        this.RECORD_DATA = this.RECORD_DATA.setIn(renderedAttrKeyPathParts, immutableValue);
+        const alteredRecordData = this.safeInstantiatePath(renderedAttrKeyPathParts, this.RECORD_DATA);
+        this.RECORD_DATA = alteredRecordData.setIn(renderedAttrKeyPathParts, immutableValue);
         return oldValue;
     }
 
@@ -178,30 +200,12 @@ export default class SingleImmutableRecordWrapper<T extends { [p: string]: any }
         if (!(settersKeys.length > 0)) {
             return {};
         }
-        let alteredRecordData: immutable.RecordOf<T> = this.RECORD_DATA;
+        let alteredRecordData: immutable.RecordOf<T> = this.safeInstantiatePath();
         const oldValues: { [setterKey: string]: any | undefined } = _.mapValues(
             setters, (setterItem: { renderedAttrKeyPathParts: string[], valueToSet: any }, setterKey: string) => {
                 const immutableValue: any = immutable.fromJS(setterItem.valueToSet);
                 const oldValue: any = this.RECORD_DATA.getIn(setterItem.renderedAttrKeyPathParts);
-
-                // navigateToAttrKeyPathIntoMapModelV2(this.itemModel, currentAttrKeyPath, ());
-
-                for (let i=0; i < setterItem.renderedAttrKeyPathParts.length - 1; i++) {
-                    const currentPathElements: string[] = setterItem.renderedAttrKeyPathParts.slice(0, i+1);
-                    const fieldModel = navigateToAttrKeyPathPartsIntoMapModel(this.itemModel, currentPathElements);
-                    if (fieldModel != null) {
-                        const retrievedItem = alteredRecordData.getIn(currentPathElements);
-                        if (retrievedItem === undefined) {
-                            alteredRecordData = alteredRecordData.setIn(currentPathElements, fieldModel.makeDefault());
-                            // todo: stop using customDefaultValue and use a factory (for list's, map's and record's ?)
-                        }
-                    }
-                }
-                /*_.forEach(attrKeyPathElements.slice(0, -1), (attrKeyPathPart: string, index: number) => {
-                    const parts = attrKeyPathElements.slice(0, index + 1);
-                    navigateToAttrKeyPathIntoMapModelV2(this.itemModel, )
-                    const item = alteredRecordData.getIn()
-                });*/
+                alteredRecordData = this.safeInstantiatePath(setterItem.renderedAttrKeyPathParts, alteredRecordData);
                 alteredRecordData = alteredRecordData.setIn(setterItem.renderedAttrKeyPathParts, immutableValue);
                 return oldValue;
             }

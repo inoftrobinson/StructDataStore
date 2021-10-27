@@ -294,7 +294,7 @@ describe('BasicObjectStore', () => {
             'getter1': undefined,
             'getter2': undefined,
             'getter3': undefined,
-            'container2.field2': "c2.f2",
+            'getter4': "c2.f2",
         });
     });
 
@@ -434,11 +434,14 @@ describe('BasicObjectStore', () => {
             'setter2': {attrKeyPath: 'container2.field1', valueToSet: "c2.f1"}
         });
         const retrievedContainers: {
-            container1: immutable.RecordOf<{field1: string}> | undefined,
-            container2: immutable.RecordOf<{field1: string}> | undefined,
-        } = await store.getMultipleAttrs([{attrKeyPath: 'container1'}, {attrKeyPath: 'container2'}]);
-        expect(retrievedContainers.container1?.toJS()).toEqual({'field1': "c1.f1"});
-        expect(retrievedContainers.container2?.toJS()).toEqual({'field1': "c2.f1"});
+            getter1: immutable.RecordOf<{field1: string}> | undefined,
+            getter2: immutable.RecordOf<{field1: string}> | undefined,
+        } = await store.getMultipleAttrs({
+            'getter1': {attrKeyPath: 'container1'},
+            'getter2': {attrKeyPath: 'container2'}
+        });
+        expect(retrievedContainers.getter1?.toJS()).toEqual({'field1': "c1.f1"});
+        expect(retrievedContainers.getter2?.toJS()).toEqual({'field1': "c2.f1"});
     });
 
     test('typedDict updateDataToAttr', async () => {

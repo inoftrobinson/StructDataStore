@@ -128,9 +128,20 @@ export async function simpleUpdateMultipleAttrs(storeFactory: StoreFactory) {
         }
     });
     const oldFieldsValues = await store.updateMultipleAttrs({
-        'setter1': {attrKeyPath: 'record1.container1.field1', valueToSet: "c1.f1.alteration2"},
-        'setter2': {attrKeyPath: 'record1.container1.field2', valueToSet: "c1.f2.alteration2"},
-        'setter3': {attrKeyPath: 'record1.container2.field1', valueToSet: "c2.f1.alteration2"}
+        'setter1': {
+            attrKeyPath: '{{recordKey}}.container1.field1',
+            queryKwargs: {'recordKey': "record1"},
+            valueToSet: "c1.f1.alteration2"
+        },
+        'setter2': {
+            attrKeyPath: '{{recordKey}}.container1.field2',
+            queryKwargs: {'recordKey': "record1"},
+            valueToSet: "c1.f2.alteration2"},
+        'setter3': {
+            attrKeyPath: '{{recordKey}}.container2.field1',
+            queryKwargs: {'recordKey': "record1"},
+            valueToSet: "c2.f1.alteration2"
+        }
     });
     expect(oldFieldsValues).toEqual({
         'setter1': "c1.f1.alteration1",
