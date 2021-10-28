@@ -224,9 +224,8 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
     ): Promise<{ removedValues: U.Merge<ImmutableCast<O.P.Pick<T, S.Split<P, '.'>>>> | undefined; subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         if (recordWrapper != null) {
-            const renderedAttrsKeyPathsParts: string[][] = _.flatten(_.values(renderedRemovers));
-            const removedValues = recordWrapper.removeMultipleAttrs(renderedAttrsKeyPathsPartsRemovers);
-            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(renderedAttrsKeyPathsParts);
+            const removedValues: { [removerKey: string]: any | undefined } = recordWrapper.removeMultipleAttrs(renderedRemovers);
+            const subscribersPromise: Promise<any> = this.subscriptionsManager.triggerSubscribersForMultipleAttrs(_.values(renderedRemovers));
             return {removedValues, subscribersPromise};
         }
         return {removedValues: undefined, subscribersPromise: new Promise<void>(resolve => resolve())};
