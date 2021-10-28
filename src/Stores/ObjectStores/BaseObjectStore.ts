@@ -247,8 +247,8 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
         return this._deleteAttrWithReturnedSubscribersPromise(renderedAttrKeyPathParts);
     }
 
-    async deleteAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>): Promise<void> {
-        await this.deleteAttrWithReturnedSubscribersPromise<P>(attrKeyPath);
+    async deleteAttr<P extends string>(attrKeyPath: F.AutoPath<T, P>, queryKwargs?: { [argKey: string]: any }): Promise<void> {
+        await this.deleteAttrWithReturnedSubscribersPromise<P>(attrKeyPath, queryKwargs);
     }
 
 
