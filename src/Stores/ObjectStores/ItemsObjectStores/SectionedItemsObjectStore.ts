@@ -24,10 +24,10 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
         this.pendingKeyItemsRetrievalPromises = {};
     }
 
-    loadFromData(data: { [recordKey: string]: T }): { subscribersPromise: Promise<any> } {
+    loadFromDataWithReturnedSubscribersPromise(data: { [recordKey: string]: T }): { success: boolean; subscribersPromise: Promise<any> } {
         this.RECORD_WRAPPERS = this.recordsDataToWrappers(data);
         const subscribersPromise: Promise<any> = this.triggerSubscribers();
-        return {subscribersPromise};
+        return {success: true, subscribersPromise};
     }
 
     retrieveAndCacheRecordItem(recordKey: string): Promise<ImmutableRecordWrapper<T> | null>  {

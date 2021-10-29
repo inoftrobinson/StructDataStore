@@ -27,7 +27,9 @@ export async function simpleGetAttr(storeFactory: StoreFactory) {
         }})
     );
     store.loadFromData({'item1': {'container1': {'field1': 42}}});
-    const retrievedField1Value: number | undefined = await store.getAttr('item1.container1.field1');
+    const retrievedField1Value: number | undefined = await store.getAttr(
+        '{{itemKey}}.container1.field1', {'itemKey': "item1"}
+    );
     expect(retrievedField1Value).toEqual(42);
 }
 
@@ -461,7 +463,7 @@ export async function simpleUpdateDataToAttr(storeFactory: StoreFactory) {
             }}),
         }})
     );
-    await store.loadFromData({'record1': {}});
+    store.loadFromData({'record1': {}});
 
     await store.updateDataToAttr({
         attrKeyPath: '{{recordKey}}',

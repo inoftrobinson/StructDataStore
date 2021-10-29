@@ -56,13 +56,17 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
         return this.subscriptionsManager.triggerAllSubscribers();
     }
 
-    abstract loadFromData(data: T): { subscribersPromise: Promise<any> };
+    abstract loadFromDataWithReturnedSubscribersPromise(data: T): { success: boolean; subscribersPromise: Promise<any> };
 
-    loadFromJsonifiedData(jsonifiedData: any): { subscribersPromise: Promise<any> } {
+    loadFromData(data: T): Promise<boolean> {
+        return this.loadFromDataWithReturnedSubscribersPromise(data).success;
+    }
+
+    loadFromJsonifiedDataWithReturnedSubscribersPromise(jsonifiedData: any): { success: boolean; subscribersPromise: Promise<any> } {
         try {
             const parsedData: any = JSON.parse(jsonifiedData);
             if (_.isPlainObject(parsedData)) {
-                return this.loadFromData(parsedData);
+                return this.loadFromDataWithReturnedSubscribersPromise(parsedData);
             } else {
                 console.warn(`Parsed data was not a plain object and could not be loaded`);
             }
@@ -70,6 +74,10 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
             console.warn(`JSON Parsing error in loading the jsonified data : ${e}`);
         }
         return {subscribersPromise: new Promise<void>(resolve => resolve())};
+    }
+
+    loadFromJsonifiedData(jsonifiedData: any): boolean {
+        return this.loadFromJsonifiedDataWithReturnedSubscribersPromise(jsonifiedData).success;
     }
 
 

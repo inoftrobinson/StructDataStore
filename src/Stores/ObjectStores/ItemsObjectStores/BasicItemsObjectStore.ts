@@ -24,10 +24,10 @@ export class BasicItemsObjectStore<T extends { [p: string]: any }> extends BaseI
         this.pendingRecordItemsRetrievalPromise = undefined;
     }
 
-    loadFromData(data: { [recordKey: string]: T }): { subscribersPromise: Promise<any> } {
+    loadFromDataWithReturnedSubscribersPromise(data: { [recordKey: string]: T }): { success: boolean; subscribersPromise: Promise<any> } {
         this.RECORD_WRAPPERS = this.recordsDataToWrappers(data);
         const subscribersPromise: Promise<any> = this.triggerSubscribers();
-        return {subscribersPromise};
+        return {success: true, subscribersPromise};
     }
 
     retrieveAndCacheAllRecordItems(): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }>  {

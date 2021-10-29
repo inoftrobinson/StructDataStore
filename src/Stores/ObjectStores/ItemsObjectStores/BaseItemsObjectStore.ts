@@ -45,8 +45,6 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         );
     }
 
-    abstract loadFromData(data: { [recordKey: string]: T }): { subscribersPromise: Promise<any> };
-    
     abstract getSingleRecordItem(key: string): Promise<ImmutableRecordWrapper<T> | null>;
 
     abstract getMultipleRecordItems(recordKeys: string[]): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }>;

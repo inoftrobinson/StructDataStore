@@ -71,16 +71,16 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return this.RECORD_WRAPPER !== undefined ? this.RECORD_WRAPPER : this.retrieveAndCacheData();
     }
 
-    loadFromData(parsedData: T): { subscribersPromise: Promise<any> } {
+    loadFromDataWithReturnedSubscribersPromise(parsedData: T): { success: boolean, subscribersPromise: Promise<any> } {
         const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(
             parsedData, this.props.objectModel
         ) as immutable.RecordOf<T>;
         if (recordItem != null) {
             this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
             const subscribersPromise: Promise<any> = this.triggerSubscribers();
-            return {subscribersPromise};
+            return {success: true, subscribersPromise};
         }
-        return {subscribersPromise: new Promise<void>(resolve => resolve())};
+        return {success: false, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
     protected async _getAttr<P extends string>(
