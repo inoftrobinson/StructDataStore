@@ -83,6 +83,11 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return {success: false, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
+    async getData(): Promise<ImmutableCast<T> | null> {
+        const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
+        return recordWrapper != null ? recordWrapper.RECORD_DATA : null;
+    }
+
     protected async _getAttr<P extends string>(
         renderedAttrKeyPathParts: string[]
     ): Promise<ImmutableCast<O.Path<T, S.Split<P, ".">>> | undefined> {
@@ -183,7 +188,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return await this._updateMultipleAttrsWithReturnedSubscribersPromise<P>(loadedSetters);
     }
 
-    async _deleteAttrWithReturnedSubscribersPromise<P extends string>(
+    protected async _deleteAttrWithReturnedSubscribersPromise<P extends string>(
         renderedAttrKeyPathParts: string[]
     ): Promise<{ subscribersPromise: Promise<any> }> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();

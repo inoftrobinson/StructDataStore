@@ -58,7 +58,7 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
 
     abstract loadFromDataWithReturnedSubscribersPromise(data: T): { success: boolean; subscribersPromise: Promise<any> };
 
-    loadFromData(data: T): Promise<boolean> {
+    loadFromData(data: T): boolean {
         return this.loadFromDataWithReturnedSubscribersPromise(data).success;
     }
 
@@ -79,7 +79,6 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
     loadFromJsonifiedData(jsonifiedData: any): boolean {
         return this.loadFromJsonifiedDataWithReturnedSubscribersPromise(jsonifiedData).success;
     }
-
 
     protected abstract _getAttr<P extends string>(
         renderedAttrKeyPathParts: string[]

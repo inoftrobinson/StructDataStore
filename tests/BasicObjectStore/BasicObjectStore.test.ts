@@ -17,6 +17,24 @@ function basicObjectStoreFactory<T>(objectModel: MapModel): BasicObjectStore<T> 
 }
 
 describe('BasicObjectStore', () => {
+    test('simple getAllData', async () => {
+        interface StoreModel {
+            container1: {
+                field1: number;
+            }
+        }
+        const store = basicObjectStoreFactory<StoreModel>(
+            new MapModel({fields: {
+                'container1': new MapModel({fields: {
+                    'field1': new BasicFieldModel({})
+                }})
+            }})
+        );
+        store.loadFromData({'container1': {'field1': 42}});
+        const retrievedData: immutable.RecordOf<StoreModel> | undefined = await store.getData();
+        expect(retrievedData?.toJS()).toEqual({'container1': {'field1': 42}});
+    });
+    
     test('simple getAttr', async () => {
         interface StoreModel {
             container1: {
