@@ -7,6 +7,9 @@ export interface CreateUpdateRecordResponse<T extends { [p: string]: any }> {
     success: boolean;
     newRecord?: immutable.RecordOf<T>;
     previousRecord?: immutable.RecordOf<T>;
+}
+
+export interface CreateUpdateRecordResponseWithSubscribersPromise<T extends { [p: string]: any }> extends CreateUpdateRecordResponse<any> {
     subscribersPromise: Promise<any>;
 }
 

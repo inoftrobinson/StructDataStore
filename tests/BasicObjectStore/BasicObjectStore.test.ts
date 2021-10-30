@@ -31,7 +31,7 @@ describe('BasicObjectStore', () => {
             }})
         );
         store.loadFromData({'container1': {'field1': 42}});
-        const retrievedData: immutable.RecordOf<StoreModel> | undefined = await store.getData();
+        const retrievedData: immutable.RecordOf<StoreModel> | null = await store.getRecordData();
         expect(retrievedData?.toJS()).toEqual({'container1': {'field1': 42}});
     });
     

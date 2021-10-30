@@ -18,7 +18,7 @@ import {
     TypedAttrGetter,
     TypedImmutableAttrSetter,
     TypedAttrSetter,
-    TypedAttrRemover, TypedAttrSelector
+    TypedAttrRemover, TypedAttrSelector, CreateUpdateRecordResponseWithSubscribersPromise
 } from "../../models";
 import {
     renderAttrKeyPathWithQueryKwargs,
@@ -71,7 +71,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return this.RECORD_WRAPPER !== undefined ? this.RECORD_WRAPPER : this.retrieveAndCacheData();
     }
 
-    loadFromDataWithReturnedSubscribersPromise(parsedData: T): { success: boolean, subscribersPromise: Promise<any> } {
+    loadFromDataWithReturnedSubscribersPromise(parsedData: T): CreateUpdateRecordResponseWithSubscribersPromise<T> {
         const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(
             parsedData, this.props.objectModel
         ) as immutable.RecordOf<T>;
@@ -83,7 +83,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return {success: false, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    async getData(): Promise<ImmutableCast<T> | null> {
+    async getRecordData(): Promise<immutable.RecordOf<T> | null> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         return recordWrapper != null ? recordWrapper.RECORD_DATA : null;
     }
