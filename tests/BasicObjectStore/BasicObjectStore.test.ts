@@ -5,7 +5,7 @@ import {
     MapModel,
     BasicItemsObjectStore,
     SectionedItemsObjectStore,
-    TypedDictFieldModel
+    TypedDictFieldModel, ImmutableCast
 } from "../../src";
 
 export type StoreFactory = <T>(itemModel: MapModel) => BasicItemsObjectStore<T> | SectionedItemsObjectStore<T>;
@@ -31,7 +31,7 @@ describe('BasicObjectStore', () => {
             }})
         );
         store.loadFromData({'container1': {'field1': 42}});
-        const retrievedData: immutable.RecordOf<StoreModel> | null = await store.getRecordData();
+        const retrievedData: ImmutableCast<StoreModel> | null = await store.getRecordData();
         expect(retrievedData?.toJS()).toEqual({'container1': {'field1': 42}});
     });
     

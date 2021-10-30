@@ -29,7 +29,7 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         return {itemKey: absoluteRenderedAttrKeyPathParts[0], renderedRelativeAttrKeyPathParts: absoluteRenderedAttrKeyPathParts.slice(1)};
     }
 
-    protected makeRecordDataWrapperFromItem(recordItem: immutable.RecordOf<T>): ImmutableRecordWrapper<T> {
+    protected makeRecordDataWrapperFromItem(recordItem: ImmutableCast<T>): ImmutableRecordWrapper<T> {
         return new ImmutableRecordWrapper<T>(recordItem, this.props.itemModel);
     }
 

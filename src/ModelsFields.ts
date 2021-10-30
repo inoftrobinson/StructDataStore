@@ -111,7 +111,7 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
                         console.log(`Missing ${fieldKey}. Breaks all`);
                     }
                 } else {
-                    result[fieldKey] = matchingItemData;
+                    result[fieldKey] = fieldItem.dataLoader(matchingItemData);
                 }
                 recordDefaultValues[fieldKey] = fieldItem.props.customDefaultValue;
             }
