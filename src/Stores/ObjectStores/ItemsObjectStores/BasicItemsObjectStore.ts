@@ -68,4 +68,9 @@ export class BasicItemsObjectStore<T extends { [p: string]: any }> extends BaseI
             output[recordKey] = recordsWrappers[recordKey];
         }, {});
     }
+
+    clearData() {
+        this.RECORD_WRAPPERS = undefined;
+        this.pendingRecordItemsRetrievalPromise = undefined;
+    }
 }

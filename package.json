@@ -1,6 +1,6 @@
 {
   "name": "struct-data-store",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Modern structured DataStore with type inferring, automatic data validation, data immutability, managed data retrieval and granular listeners for TypeScript.",
   "author": "Inoft",
   "license": "MIT",

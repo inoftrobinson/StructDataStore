@@ -97,32 +97,36 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
         }, {}));*/
     }
 
-    dataLoader(fieldData: any): any {
-        const recordDefaultValues: { [fieldKey: string]: any } = {};
-        const recordValues = _.transform(
-            this.props.fields, (result: { [p: string]: any}, fieldItem: BaseFieldModel<any>, fieldKey: string) => {
-                const matchingItemData: any | undefined = fieldData[fieldKey];
-                if (matchingItemData == null) {
-                    if (fieldItem.props.required !== true) {
-                        result[fieldKey] = (fieldItem.props.customDefaultValue !== undefined ?
-                                resolveResultOrCallbackResult(fieldItem.props.customDefaultValue) : undefined
-                        );
+    dataLoader(fieldData: { [childFieldKey: string]: any } | null): any {
+        if (fieldData != null) {
+            const recordDefaultValues: { [fieldKey: string]: any } = {};
+            const recordValues = _.transform(
+                this.props.fields, (result: { [p: string]: any }, fieldItem: BaseFieldModel<any>, fieldKey: string) => {
+                    const matchingItemData: any | undefined = fieldData[fieldKey];
+                    if (matchingItemData === undefined) {
+                        if (fieldItem.props.required !== true) {
+                            result[fieldKey] = (fieldItem.props.customDefaultValue !== undefined ?
+                                    resolveResultOrCallbackResult(fieldItem.props.customDefaultValue) : undefined
+                            );
+                        } else {
+                            console.log(`Missing ${fieldKey}. Breaks all`);
+                        }
                     } else {
-                        console.log(`Missing ${fieldKey}. Breaks all`);
+                        result[fieldKey] = fieldItem.dataLoader(matchingItemData);
                     }
-                } else {
-                    result[fieldKey] = fieldItem.dataLoader(matchingItemData);
+                    recordDefaultValues[fieldKey] = fieldItem.props.customDefaultValue;
                 }
-                recordDefaultValues[fieldKey] = fieldItem.props.customDefaultValue;
-            }
-        );
-        // const recordDefaultValues = _.mapValues(recordValues, () => undefined);
-        // We set the defaultValues to a map of undefined values for all the keys in our recordValues. This is crucial, as this allows
-        //the deletion and removal of fields. Otherwise, the default values would be restored when the fields are deleted/removed.
+            );
+            // const recordDefaultValues = _.mapValues(recordValues, () => undefined);
+            // We set the defaultValues to a map of undefined values for all the keys in our recordValues. This is crucial, as this allows
+            //the deletion and removal of fields. Otherwise, the default values would be restored when the fields are deleted/removed.
 
-        const recordFactory: immutable.Record.Factory<any> = immutable.Record<any>(recordDefaultValues);
-        // The default values are used to created a record factory.
-        return recordFactory(recordValues as Partial<any>);
+            const recordFactory: immutable.Record.Factory<any> = immutable.Record<any>(recordDefaultValues);
+            // The default values are used to created a record factory.
+            return recordFactory(recordValues as Partial<any>);
+        } else {
+            return fieldData;
+        }
     }
 }
 

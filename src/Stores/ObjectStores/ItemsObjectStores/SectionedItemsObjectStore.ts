@@ -148,4 +148,9 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
             return existingItemsDataWrappers;
         }
     }
+
+    clearData() {
+        this.RECORD_WRAPPERS = {};
+        this.pendingKeyItemsRetrievalPromises = {};
+    }
 }

@@ -71,6 +71,11 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return this.RECORD_WRAPPER !== undefined ? this.RECORD_WRAPPER : this.retrieveAndCacheData();
     }
 
+    clearData() {
+        this.RECORD_WRAPPER = undefined;
+        this.pendingRetrievalPromise = undefined;
+    }
+
     loadFromDataWithReturnedSubscribersPromise(parsedData: T): CreateUpdateRecordResponseWithSubscribersPromise<T> {
         const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(
             parsedData, this.props.objectModel

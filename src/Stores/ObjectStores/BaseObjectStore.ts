@@ -56,6 +56,8 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
         return this.subscriptionsManager.triggerAllSubscribers();
     }
 
+    abstract clearData(): void;
+
     abstract loadFromDataWithReturnedSubscribersPromise(data: T): { success: boolean; subscribersPromise: Promise<any> };
 
     loadFromData(data: T): boolean {
@@ -85,8 +87,8 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
     ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined>;
 
     getAttr<P extends string>(
-        attrKeyPath: F.AutoPath<{ [recordKey: string]: T }, P>, queryKwargs?: { [argKey: string]: any }
-    ): Promise<ImmutableCast<O.Path<{ [recordKey: string]: T }, S.Split<P, '.'>>> | undefined> {
+        attrKeyPath: F.AutoPath<T, P>, queryKwargs?: { [argKey: string]: any }
+    ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
         const renderedAttrKeyPathParts: string[] = renderAttrKeyPathWithQueryKwargs(attrKeyPath, queryKwargs);
         return this._getAttr(renderedAttrKeyPathParts);
     }
