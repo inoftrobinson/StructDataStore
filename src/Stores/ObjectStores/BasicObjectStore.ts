@@ -88,7 +88,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
         return {success: false, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
-    async getRecordData(): Promise<immutable.RecordOf<T> | null> {
+    async getRecordData(): Promise<ImmutableCast<T> | null> {
         const recordWrapper: ImmutableRecordWrapper<T> | null = await this.getRecordWrapper();
         return recordWrapper != null ? recordWrapper.RECORD_DATA : null;
     }

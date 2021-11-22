@@ -2,6 +2,7 @@ import * as _ from 'lodash';
 import * as immutable from 'immutable';
 import ImmutableRecordWrapper from "../../../ImmutableRecordWrapper";
 import {BaseItemsObjectStore, BaseItemsObjectStoreProps} from "./BaseItemsObjectStore";
+import {ImmutableCast} from "../../../types";
 
 
 export type RetrieveAllItemsCallablePromiseResult<T> = {
@@ -30,7 +31,7 @@ export class BasicItemsObjectStore<T extends { [p: string]: any }> extends BaseI
         return {success: true, subscribersPromise};
     }
 
-    retrieveAndCacheAllRecords(): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }>  {
+    protected retrieveAndCacheAllRecordsWrappers(): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }>  {
         if (this.pendingRecordItemsRetrievalPromise !== undefined) {
             return this.pendingRecordItemsRetrievalPromise;
         } else {
@@ -52,18 +53,32 @@ export class BasicItemsObjectStore<T extends { [p: string]: any }> extends BaseI
             return retrievalPromise;
         }
     }
-
-    async getRecords(): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }> {
-        return this.RECORD_WRAPPERS !== undefined ? this.RECORD_WRAPPERS : this.retrieveAndCacheAllRecords();
+    
+    async retrieveAndCacheAllRecords(): Promise<{ [recordKey: string]: ImmutableCast<T> | null }>  {
+        const recordsWrappers: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.retrieveAndCacheAllRecordsWrappers();
+        return _.mapValues(recordsWrappers, (recordWrapper: ImmutableRecordWrapper<T> | null) => {
+            return recordWrapper != null ? recordWrapper.RECORD_DATA : null;
+        });
     }
 
-    async getSingleRecord(key: string): Promise<ImmutableRecordWrapper<T> | null> {
-        const recordsItems: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecords();
+    protected async getRecordsWrappers(): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }> {
+        return this.RECORD_WRAPPERS !== undefined ? this.RECORD_WRAPPERS : this.retrieveAndCacheAllRecordsWrappers();
+    }
+
+    async getRecords(): Promise<{ [recordKey: string]: ImmutableCast<T> | null }> {
+        const recordsWrappers: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecordsWrappers();
+        return _.mapValues(recordsWrappers, (recordWrapper: ImmutableRecordWrapper<T> | null) => {
+            return recordWrapper != null ? recordWrapper.RECORD_DATA : null;
+        });
+    }
+
+    protected async getSingleRecordWrapper(key: string): Promise<ImmutableRecordWrapper<T> | null> {
+        const recordsItems: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecordsWrappers();
         return recordsItems[key];
     }
 
-    async getMultipleRecords(recordKeys: string[]): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }> {
-        const recordsWrappers: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecords();
+    protected async getMultipleRecordsWrappers(recordKeys: string[]): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }> {
+        const recordsWrappers: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecordsWrappers();
         return _.transform(recordKeys, (output: { [recordKey: string]: ImmutableRecordWrapper<T> | null}, recordKey: string) => {
             output[recordKey] = recordsWrappers[recordKey];
         }, {});
