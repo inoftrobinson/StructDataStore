@@ -125,7 +125,7 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
             // The default values are used to created a record factory.
             return recordFactory(recordValues as Partial<any>);
         } else {
-            return fieldData;
+            return undefined;
         }
     }
 }

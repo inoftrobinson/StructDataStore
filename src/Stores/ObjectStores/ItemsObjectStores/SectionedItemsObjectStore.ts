@@ -67,7 +67,7 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
         }
     }
 
-    async getSingleRecordItem(key: string): Promise<ImmutableRecordWrapper<T> | null> {
+    async getSingleRecord(key: string): Promise<ImmutableRecordWrapper<T> | null> {
         return this.RECORD_WRAPPERS[key] !== undefined ? this.RECORD_WRAPPERS[key] : this.retrieveAndCacheRecordItem(key);
     }
 
@@ -128,7 +128,7 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
         }, {});
     }
 
-    async getMultipleRecordItems(recordKeys: string[]): Promise<{ [key: string]: ImmutableRecordWrapper<T> | null }> {
+    async getMultipleRecords(recordKeys: string[]): Promise<{ [key: string]: ImmutableRecordWrapper<T> | null }> {
         const keysRequiringRetrieval: string[] = [];
         const existingItemsDataWrappers: { [key: string]: ImmutableRecordWrapper<T> } = {};
         recordKeys.forEach((key: string) => {

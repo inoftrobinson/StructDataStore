@@ -30,7 +30,7 @@ export class BasicItemsObjectStore<T extends { [p: string]: any }> extends BaseI
         return {success: true, subscribersPromise};
     }
 
-    retrieveAndCacheAllRecordItems(): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }>  {
+    retrieveAndCacheAllRecords(): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }>  {
         if (this.pendingRecordItemsRetrievalPromise !== undefined) {
             return this.pendingRecordItemsRetrievalPromise;
         } else {
@@ -53,17 +53,17 @@ export class BasicItemsObjectStore<T extends { [p: string]: any }> extends BaseI
         }
     }
 
-    async getRecordItems(): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }> {
-        return this.RECORD_WRAPPERS !== undefined ? this.RECORD_WRAPPERS : this.retrieveAndCacheAllRecordItems();
+    async getRecords(): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }> {
+        return this.RECORD_WRAPPERS !== undefined ? this.RECORD_WRAPPERS : this.retrieveAndCacheAllRecords();
     }
 
-    async getSingleRecordItem(key: string): Promise<ImmutableRecordWrapper<T> | null> {
-        const recordsItems: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecordItems();
+    async getSingleRecord(key: string): Promise<ImmutableRecordWrapper<T> | null> {
+        const recordsItems: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecords();
         return recordsItems[key];
     }
 
-    async getMultipleRecordItems(recordKeys: string[]): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }> {
-        const recordsWrappers: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecordItems();
+    async getMultipleRecords(recordKeys: string[]): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }> {
+        const recordsWrappers: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecords();
         return _.transform(recordKeys, (output: { [recordKey: string]: ImmutableRecordWrapper<T> | null}, recordKey: string) => {
             output[recordKey] = recordsWrappers[recordKey];
         }, {});
