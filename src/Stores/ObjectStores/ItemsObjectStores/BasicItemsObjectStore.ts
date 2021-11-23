@@ -73,8 +73,8 @@ export class BasicItemsObjectStore<T extends { [p: string]: any }> extends BaseI
     }
 
     protected async getSingleRecordWrapper(key: string): Promise<ImmutableRecordWrapper<T> | null> {
-        const recordsItems: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecordsWrappers();
-        return recordsItems[key];
+        const recordsWrappers: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecordsWrappers();
+        return recordsWrappers[key];
     }
 
     protected async getMultipleRecordsWrappers(recordKeys: string[]): Promise<{ [recordKey: string]: ImmutableRecordWrapper<T> | null }> {
@@ -82,6 +82,17 @@ export class BasicItemsObjectStore<T extends { [p: string]: any }> extends BaseI
         return _.transform(recordKeys, (output: { [recordKey: string]: ImmutableRecordWrapper<T> | null}, recordKey: string) => {
             output[recordKey] = recordsWrappers[recordKey];
         }, {});
+    }
+
+    protected async updateSingleRecordWrapper(recordKey: string, value: ImmutableCast<T> | null): Promise<ImmutableRecordWrapper<T> | null> {
+        const recordsWrappers: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.getRecordsWrappers();
+        const matchingRecordWrapper: ImmutableRecordWrapper<T> | null = recordsWrappers[recordKey];
+        if (value != null) {
+            recordsWrappers[recordKey] = ImmutableRecordWrapper.fromRecord(this.props.itemModel, value);
+        } else {
+            delete recordsWrappers[recordKey];
+        }
+        return matchingRecordWrapper;
     }
 
     clearData() {

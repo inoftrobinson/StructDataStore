@@ -137,7 +137,7 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
     async retrieveAndCacheMultipleRecords(recordKeys: string[]): Promise<{ [key: string]: ImmutableCast<T> | null }>  {
         const recordsWrappers: { [recordKey: string]: ImmutableRecordWrapper<T> | null } = await this.retrieveAndCacheMultipleRecordsWrappers(recordKeys);
         return _.mapValues(recordsWrappers, (recordWrapper: ImmutableRecordWrapper<T> | null) => {
-            return recordWrapper != null ? recordWrapper.RECORD_DATA : null;
+            return recordWrapper != null ? recordWrapper.RECORD_DATA as ImmutableCast<T> : null;
         }); 
     }
 
@@ -160,6 +160,22 @@ export class SectionedItemsObjectStore<T extends { [p: string]: any }> extends B
         } else {
             return existingItemsDataWrappers;
         }
+    }
+
+    protected async updateSingleRecordWrapper(recordKey: string, value: ImmutableCast<T> | null): Promise<ImmutableRecordWrapper<T> | undefined> {
+        const existingPendingRetrievalPromiseForRecord: Promise<ImmutableRecordWrapper<T> | null> | undefined = (
+            this.pendingKeyItemsRetrievalPromises[recordKey]
+        );
+        if (existingPendingRetrievalPromiseForRecord !== undefined) {
+            await existingPendingRetrievalPromiseForRecord;
+        }
+        const matchingRecordWrapper: ImmutableRecordWrapper<T> | undefined = this.RECORD_WRAPPERS[recordKey];
+        if (value != null) {
+            this.RECORD_WRAPPERS[recordKey] = ImmutableRecordWrapper.fromRecord(this.props.itemModel, value);
+        } else {
+            delete this.RECORD_WRAPPERS[recordKey];
+        }
+        return matchingRecordWrapper;
     }
 
     clearData() {

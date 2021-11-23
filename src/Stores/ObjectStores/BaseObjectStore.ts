@@ -118,7 +118,7 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
         { attrKeyPath, queryKwargs, valueToSet }: TypedImmutableAttrSetter<T, P>
     ): Promise<{ oldValue: ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined, subscribersPromise: Promise<any> }> {
         const renderedAttrKeyPathParts: string[] = renderAttrKeyPathWithQueryKwargs(attrKeyPath, queryKwargs);
-        return this._updateAttrWithReturnedSubscribersPromise(renderedAttrKeyPathParts, valueToSet);
+        return this._updateAttrWithReturnedSubscribersPromise<P>(renderedAttrKeyPathParts, valueToSet);
     }
 
     async updateAttr<P extends string>(
