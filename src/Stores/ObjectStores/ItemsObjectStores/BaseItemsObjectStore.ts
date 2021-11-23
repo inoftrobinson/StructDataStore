@@ -337,9 +337,8 @@ export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> exten
         return await this.updateAttr<P>(`${recordKey}.${attrKeyPath}` as any, value as any);
     }
 
-    async updateCachedRecord(key: string, recordData: ImmutableCast<T> | null): Promise<ImmutableCast<T> | undefined> {
-        const serializedRecordData: T | null = recordData != null ? recordData.toJS() : null;
-        return await this.updateAttr({attrKeyPath: key, valueToSet: serializedRecordData});
+    async updateCachedRecord<P extends string>(key: P, recordData: ImmutableCast<T> | null): Promise<ImmutableCast<T> | undefined> {
+        return await this.updateAttr<P>({attrKeyPath: key, valueToSet: recordData});
     }
 
     async updateCachedRecords(

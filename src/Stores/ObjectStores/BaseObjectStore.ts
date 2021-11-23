@@ -1,13 +1,8 @@
 import {F, O, S, U} from 'ts-toolbelt';
 import * as _ from 'lodash';
-import * as immutable from 'immutable';
 import {BaseStore} from "../BaseStore";
 import SubscriptionsManager from "../../SubscriptionsManager";
-import {
-    ImmutableCast,
-    ObjectFlattenedRecursiveMutatorsResults,
-    ObjectOptionalFlattenedRecursiveMutators, ObjectOptionalFlattenedRecursiveMutatorsWithoutImmutableCast,
-} from "../../types";
+import {ImmutableCast} from "../../types";
 import {
     TypedAttrGetter,
     TypedAttrSelector,
@@ -15,7 +10,6 @@ import {
     TypedAttrSetter,
     TypedAttrRemover
 } from "../../models";
-import ImmutableRecordWrapper from "../../ImmutableRecordWrapper";
 import {renderAttrKeyPathWithQueryKwargs} from "../../utils/attrKeyPaths";
 import {RenderedTypedAttrSetter, RenderedTypedImmutableAttrSetter} from "../../internalModels";
 
@@ -75,7 +69,7 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
         } catch (e) {
             console.warn(`JSON Parsing error in loading the jsonified data : ${e}`);
         }
-        return {subscribersPromise: new Promise<void>(resolve => resolve())};
+        return {success: false, subscribersPromise: new Promise<void>(resolve => resolve())};
     }
 
     loadFromJsonifiedData(jsonifiedData: any): boolean {
@@ -90,7 +84,7 @@ export abstract class BaseObjectStore<T extends { [p: string]: any }> extends Ba
         attrKeyPath: F.AutoPath<T, P>, queryKwargs?: { [argKey: string]: any }
     ): Promise<ImmutableCast<O.Path<T, S.Split<P, '.'>>> | undefined> {
         const renderedAttrKeyPathParts: string[] = renderAttrKeyPathWithQueryKwargs(attrKeyPath, queryKwargs);
-        return this._getAttr(renderedAttrKeyPathParts);
+        return this._getAttr<P>(renderedAttrKeyPathParts);
     }
 
 
@@ -194,7 +188,7 @@ This can cause the type inferring to be invalid and some setterKey's to be missi
         setters: { [setterKey: string]: TypedAttrSetter<T, P> }
     ): Promise<{ [setterKey: string]: any | undefined }> {
         // ObjectFlattenedRecursiveMutatorsResults<any, any>
-        return (await this.updateMultipleAttrsWithReturnedSubscribersPromise(setters)).oldValues;
+        return (await this.updateMultipleAttrsWithReturnedSubscribersPromise<P>(setters)).oldValues;
     }
 
 
