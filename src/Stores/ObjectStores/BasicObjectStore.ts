@@ -42,6 +42,7 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
 
     constructor(public readonly props: BasicObjectStoreProps<T>) {
         super(props);
+        this.props.objectModel.register(undefined);
     }
 
     retrieveAndCacheData(): Promise<ImmutableRecordWrapper<T> | null>  {

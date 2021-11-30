@@ -1,7 +1,6 @@
 import * as _ from 'lodash';
 import * as immutable from "immutable";
 import {resolveResultOrCallbackResult} from "./utils/executors";
-import * as Immutable from "immutable";
 
 
 export interface PrimitiveRestrainedFieldModelProps {
@@ -13,7 +12,17 @@ export interface ComplexBasicFieldModelProps extends PrimitiveRestrainedFieldMod
 }
 
 export abstract class BaseFieldModel<P extends PrimitiveRestrainedFieldModelProps> {
+    private _parent?: BaseFieldModel<any>;
+
     protected constructor(public readonly props: P) {
+    }
+
+    get parent(): BaseFieldModel<any> | undefined {
+        return this._parent;
+    }
+
+    register<P extends BaseFieldModel<any>>(parent: P | undefined) {
+        this._parent = parent;
     }
 
     abstract dataLoader(fieldData: any): any;
@@ -76,6 +85,13 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
 
     constructor(public readonly props: MapModelProps) {
         super({...props, customDefaultValue: props.required === true ? () => this.makeDefault() : undefined});
+    }
+
+    register<P extends BaseFieldModel<any>>(parent: P) {
+        super.register(parent);
+        _.forEach(this.props.fields, (childField: BaseFieldModel<any>) => {
+            childField.register<this>(this);
+        });
     }
 
     navigateToAttrModel(attrKeyPathParts: string[]) {
@@ -143,6 +159,13 @@ export class TypedDictFieldModel extends ContainerFieldModel<TypedDictProps> {
         super({...props, customDefaultValue: props.useEmptyAsDefault === true ? () => immutable.Map() : undefined});
     }
 
+    register<P extends BaseFieldModel<any>>(parent: P) {
+        super.register(parent);
+        if (this.props.itemType instanceof BaseFieldModel) {
+            this.props.itemType.register<this>(this);
+        }
+    }
+
     navigateToAttrModel(attrKeyPathParts: string[]) {
         if (attrKeyPathParts.length > 0) {
             return [this.props.itemType, attrKeyPathParts.slice(1)];
@@ -150,8 +173,12 @@ export class TypedDictFieldModel extends ContainerFieldModel<TypedDictProps> {
         return [this, attrKeyPathParts];
     }
 
-    dataLoader(fieldData: any): Immutable.Map<string, any> {
-        const itemTypeCallable = this.props.itemType === '__ACTIVE_SELF_DICT__' ? this : this.props.itemType;
+    makeDefault(): immutable.Map<string, any> {
+        return immutable.Map({});
+    }
+
+    dataLoader(fieldData: any): immutable.Map<string, any> {
+        const itemTypeCallable = this.props.itemType === '__ACTIVE_SELF_DICT__' ? this.parent : this.props.itemType;
         return immutable.Map(_.transform(fieldData, (result: { [p: string]: any }, dictItem: any, dictKey: string) => {
             result[dictKey] = itemTypeCallable.dataLoader(dictItem);
         }, {}));

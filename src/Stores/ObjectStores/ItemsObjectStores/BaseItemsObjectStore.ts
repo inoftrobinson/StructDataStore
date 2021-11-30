@@ -18,6 +18,7 @@ export interface BaseItemsObjectStoreProps extends BaseObjectStoreProps {
 export abstract class BaseItemsObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<{ [recordKey: string]: T }> {
     protected constructor(public readonly props: BaseItemsObjectStoreProps) {
         super(props);
+        this.props.itemModel.register(undefined);
     }
 
     private static separateAbsoluteRenderedAttrKeyPathPartsToRelative(

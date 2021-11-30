@@ -6,11 +6,8 @@ import {
     MapModel,
     TypedDictFieldModel
 } from "../../src";
-import {attempt} from "lodash";
 
 
-// export default (storeClass: typeof BasicItemsObjectStore | typeof SectionedItemsObjectStore) => {
-//     describe('BaseItemsObjectStore', () => {
 export type StoreFactory = <T>(itemModel: MapModel) => BasicItemsObjectStore<T> | SectionedItemsObjectStore<T>;
 
 export async function simpleGetAttr(storeFactory: StoreFactory) {
