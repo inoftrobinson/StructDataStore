@@ -55,8 +55,12 @@ export class SetFieldModel extends BasicFieldModel {
     }
 
     dataLoader(fieldData: any): any {
-        const itemDataIsArrayLike: boolean = _.isArrayLike(fieldData);
-        return immutable.Set(itemDataIsArrayLike ? fieldData : []);
+        const safeEntries: any[] = (
+            _.isSet(fieldData) ? Array.from(fieldData.values()) : (
+                _.isArray(fieldData) ? fieldData : []
+            )
+        );
+        return immutable.Set(safeEntries);
     }
 }
 
