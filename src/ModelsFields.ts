@@ -55,6 +55,9 @@ export class SetFieldModel extends BasicFieldModel {
     }
 
     dataLoader(fieldData: any): any {
+        // We have support for both the Set object, which is what we would expect from a standard
+        // updateDataToAttr from the client, but we also have support the items being in an Array,
+        // which is what will happen when the items of a set are parsed from json.
         const safeEntries: any[] = (
             _.isSet(fieldData) ? Array.from(fieldData.values()) : (
                 _.isArray(fieldData) ? fieldData : []
