@@ -137,8 +137,8 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
                     } else {
                         result[fieldKey] = fieldItem.dataLoader(matchingItemData);
                     }
-                    recordDefaultValues[fieldKey] = fieldItem.props.customDefaultValue;
-                }
+                    recordDefaultValues[fieldKey] = resolveResultOrCallbackResult(fieldItem.props.customDefaultValue);
+                }, {}
             );
             // const recordDefaultValues = _.mapValues(recordValues, () => undefined);
             // We set the defaultValues to a map of undefined values for all the keys in our recordValues. This is crucial, as this allows
