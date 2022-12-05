@@ -138,7 +138,10 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
                         return undefined;
                     }
                 } else {
-                    recordValues[fieldKey] = fieldItem.dataLoader(matchingItemData);
+                    const loadedItemData: any | undefined = fieldItem.dataLoader(matchingItemData);
+                    if (loadedItemData !== undefined) {
+                        recordValues[fieldKey] = loadedItemData;
+                    }
                 }
                 recordDefaultValues[fieldKey] = resolveResultOrCallbackResult(fieldItem.props.customDefaultValue);
             }
@@ -189,7 +192,10 @@ export class TypedDictFieldModel extends ContainerFieldModel<TypedDictProps> {
     dataLoader(fieldData: any): immutable.Map<string, any> {
         const itemTypeCallable = this.props.itemType === '__ACTIVE_SELF_DICT__' ? this.parent : this.props.itemType;
         return immutable.Map(_.transform(fieldData, (result: { [p: string]: any }, dictItem: any, dictKey: string) => {
-            result[dictKey] = itemTypeCallable.dataLoader(dictItem);
+            const loadedItem: any | undefined = itemTypeCallable.dataLoader(dictItem);
+            if (loadedItem !== undefined) {
+                result[dictKey] = loadedItem;
+            }
         }, {}));
     }
 }
