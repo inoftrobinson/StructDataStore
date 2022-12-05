@@ -54,14 +54,15 @@ class BasicObjectStore<T extends { [p: string]: any }> extends BaseObjectStore<T
                 if (result.success) {
                     const recordItem: immutable.RecordOf<T> | null = loadObjectDataToImmutableValuesWithFieldsModel(
                         result.data, this.props.objectModel
-                    ) as immutable.RecordOf<T>;
-                    this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
-                    this.triggerSubscribers();
-                    return this.RECORD_WRAPPER;
-                } else {
-                    this.props.onRetrievalFailure?.(result.metadata);
-                    return null;
+                    ) as immutable.RecordOf<T> | null;
+                    if (recordItem != null) {
+                        this.RECORD_WRAPPER = new ImmutableRecordWrapper<T>(recordItem, this.props.objectModel);
+                        this.triggerSubscribers();
+                        return this.RECORD_WRAPPER;
+                    }
                 }
+                this.props.onRetrievalFailure?.(result.metadata);
+                return null;
             });
             this.pendingRetrievalPromise = retrievalPromise;
             return retrievalPromise;
