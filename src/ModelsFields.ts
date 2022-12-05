@@ -123,29 +123,31 @@ export class MapModel extends ContainerFieldModel<MapModelProps> {
     dataLoader(fieldData: { [childFieldKey: string]: any } | null): any {
         if (fieldData != null) {
             const recordDefaultValues: { [fieldKey: string]: any } = {};
-            const recordValues = _.transform(
-                this.props.fields, (result: { [p: string]: any }, fieldItem: BaseFieldModel<any>, fieldKey: string) => {
-                    const matchingItemData: any | undefined = fieldData[fieldKey];
-                    if (matchingItemData === undefined) {
-                        if (fieldItem.props.required !== true) {
-                            result[fieldKey] = (fieldItem.props.customDefaultValue !== undefined ?
-                                    resolveResultOrCallbackResult(fieldItem.props.customDefaultValue) : undefined
-                            );
-                        } else {
-                            console.log(`Missing ${fieldKey}. Breaks all`);
-                        }
+            const recordValues: { [fieldKey: string]: any } = {};
+
+            for (let fieldKey in this.props.fields) {
+                const fieldItem: BaseFieldModel<any> = this.props.fields[fieldKey];
+                const matchingItemData: any | undefined = fieldData[fieldKey];
+                if (matchingItemData === undefined) {
+                    if (fieldItem.props.required !== true) {
+                        recordValues[fieldKey] = (fieldItem.props.customDefaultValue !== undefined ?
+                                resolveResultOrCallbackResult(fieldItem.props.customDefaultValue) : undefined
+                        );
                     } else {
-                        result[fieldKey] = fieldItem.dataLoader(matchingItemData);
+                        console.log(`Missing ${fieldKey}. Breaks all and returning undefined.`);
+                        return undefined;
                     }
-                    recordDefaultValues[fieldKey] = resolveResultOrCallbackResult(fieldItem.props.customDefaultValue);
-                }, {}
-            );
+                } else {
+                    recordValues[fieldKey] = fieldItem.dataLoader(matchingItemData);
+                }
+                recordDefaultValues[fieldKey] = resolveResultOrCallbackResult(fieldItem.props.customDefaultValue);
+            }
             // const recordDefaultValues = _.mapValues(recordValues, () => undefined);
             // We set the defaultValues to a map of undefined values for all the keys in our recordValues. This is crucial, as this allows
-            //the deletion and removal of fields. Otherwise, the default values would be restored when the fields are deleted/removed.
+            // the deletion and removal of fields. Otherwise, the default values would be restored when the fields are deleted/removed.
 
             const recordFactory: immutable.Record.Factory<any> = immutable.Record<any>(recordDefaultValues);
-            // The default values are used to created a record factory.
+            // The default values are used to create a record factory.
             return recordFactory(recordValues as Partial<any>);
         } else {
             return undefined;
